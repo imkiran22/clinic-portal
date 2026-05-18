@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { supabase } from '@/lib/supabase'
+import { authService } from '@/features/auth/services/authService'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -68,10 +70,25 @@ export const router = createRouter({
   routes,
 })
 
-// Auth + profile guard. Wired in M3 when Supabase is configured.
-// For M1, all routes pass through so dev navigation works without credentials.
 router.beforeEach(async (to) => {
+  const session = await authService.getSession(supabase)
+
+  // Authenticated user hitting /login → bounce them to where they belong.
+  if (to.name === 'login' && session) {
+    const profile = await authService.getProfile(supabase, session.user.id)
+    return profile ? { name: 'dashboard' } : { name: 'contact-admin' }
+  }
+
   if (to.meta.public) return true
-  // M3 will check session + profile here and redirect to /login or /contact-admin.
+
+  if (!session) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  const profile = await authService.getProfile(supabase, session.user.id)
+  if (!profile) {
+    return { name: 'contact-admin' }
+  }
+
   return true
 })
