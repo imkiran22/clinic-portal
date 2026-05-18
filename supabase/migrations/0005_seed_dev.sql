@@ -15,7 +15,7 @@ begin
   end if;
 
   insert into clinics (name)
-  values ('Demo Skin Clinic')
+  values ('Define Skin Hair & Laser Clinic')
   returning id into v_clinic_id;
 
   -- Patients (5)
