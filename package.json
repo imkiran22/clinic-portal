@@ -1,0 +1,44 @@
+{
+  "name": "clinic-portal",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "@tanstack/vue-query": "^5.100.10",
+    "@tanstack/vue-table": "^8.21.3",
+    "@vee-validate/zod": "^4.15.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-vue-next": "^1.0.0",
+    "reka-ui": "^2.9.7",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss-animate": "^1.0.7",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.12",
+    "vue-router": "^4.6.4",
+    "vue-sonner": "^2.0.9",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "@vitejs/plugin-vue-jsx": "^5.1.5",
+    "@vue/babel-plugin-jsx": "^2.0.1",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.10",
+    "vue-tsc": "^2.1.8"
+  }
+}
