@@ -22,7 +22,7 @@ export default defineComponent({
     return () => {
       if (status.value === 'expired') {
         return (
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-destructive/15 text-destructive">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-700 dark:text-red-400">
             Expired
           </span>
         )

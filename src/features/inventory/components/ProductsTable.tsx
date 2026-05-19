@@ -6,7 +6,7 @@ import StockBadge from './StockBadge'
 import ExpiryBadge from './ExpiryBadge'
 
 function fmtMoney(v: number | null | undefined) {
-  if (v === null || v === undefined) return '—'
+  if (v === null || v === undefined || v === 0) return '—'
   return v.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -46,8 +46,8 @@ export default defineComponent({
             <tr class="text-left">
               <th class="px-4 py-2 font-medium">Name</th>
               <th class="px-4 py-2 font-medium">Category</th>
-              <th class="px-4 py-2 font-medium">SKU</th>
               <th class="px-4 py-2 font-medium">Supplier</th>
+              <th class="px-4 py-2 font-medium">SKU</th>
               <th class="px-4 py-2 font-medium text-right w-28">Stock</th>
               <th class="px-4 py-2 font-medium">Expiry</th>
               <th class="px-4 py-2 font-medium text-right">Price</th>
@@ -65,20 +65,27 @@ export default defineComponent({
                 <td class="px-4 py-2 text-muted-foreground">
                   {p.category ?? '—'}
                 </td>
-                <td class="px-4 py-2 text-muted-foreground tabular-nums">
-                  {p.sku ?? '—'}
-                </td>
                 <td class="px-4 py-2 text-muted-foreground">
                   {p.supplier_name}
                 </td>
+                <td class="px-4 py-2 text-muted-foreground tabular-nums">
+                  {p.sku ?? '—'}
+                </td>
                 <td class="px-4 py-2 text-right">
-                  <span class="inline-flex items-center justify-end gap-2">
-                    <span class="tabular-nums">{p.current_stock}</span>
+                  {p.current_stock <= 0 ? (
                     <StockBadge
                       current={p.current_stock}
                       reorderLevel={p.reorder_level}
                     />
-                  </span>
+                  ) : (
+                    <span class="inline-flex items-center justify-end gap-2">
+                      <span class="tabular-nums">{p.current_stock}</span>
+                      <StockBadge
+                        current={p.current_stock}
+                        reorderLevel={p.reorder_level}
+                      />
+                    </span>
+                  )}
                 </td>
                 <td class="px-4 py-2">
                   <span class="inline-flex items-center gap-2">
