@@ -9,7 +9,7 @@ export default defineComponent({
     const sidebarOpen = ref(false)
 
     return () => (
-      <div class="flex min-h-screen bg-background text-foreground">
+      <div class="flex h-screen overflow-hidden bg-background text-foreground">
         <Sidebar open={sidebarOpen.value} onClose={() => (sidebarOpen.value = false)} />
         <div class="flex-1 flex flex-col min-w-0">
           <Topbar onToggleSidebar={() => (sidebarOpen.value = !sidebarOpen.value)} />

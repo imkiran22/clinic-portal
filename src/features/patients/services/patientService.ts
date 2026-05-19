@@ -2,23 +2,30 @@ import type { AppSupabaseClient } from '@/lib/supabase'
 import { getCurrentClinicId } from '@/lib/clinic'
 import type { Patient, PatientInput } from '../types'
 
-const LIST_LIMIT = 1000
+export type ListResult = {
+  rows: Patient[]
+  total: number
+}
 
 export const patientService = {
-  async list(sb: AppSupabaseClient, search?: string): Promise<Patient[]> {
+  async list(
+    sb: AppSupabaseClient,
+    args: { search?: string; page: number; pageSize: number },
+  ): Promise<ListResult> {
+    const { search, page, pageSize } = args
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+
     let q = sb
       .from('patients_active')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('name')
-      .limit(LIST_LIMIT)
+      .range(from, to)
 
     const s = search?.trim()
     if (s) {
       const isNumeric = /^\d+$/.test(s)
       if (isNumeric) {
-        // Numeric search always hits phone substring + name substring; the
-        // legacy_client_no clause is skipped when s would overflow int4
-        // (e.g., a 10-digit phone number).
         const PG_INT4_MAX = 2_147_483_647
         const clauses = [`name.ilike.%${s}%`, `phone.ilike.%${s}%`]
         const asInt = Number(s)
@@ -31,9 +38,9 @@ export const patientService = {
       }
     }
 
-    const { data, error } = await q
+    const { data, error, count } = await q
     if (error) throw error
-    return (data ?? []) as Patient[]
+    return { rows: (data ?? []) as Patient[], total: count ?? 0 }
   },
 
   async get(sb: AppSupabaseClient, id: string): Promise<Patient | null> {
