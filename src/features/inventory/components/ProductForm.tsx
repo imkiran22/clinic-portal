@@ -46,7 +46,7 @@ export default defineComponent({
           <TextField name="sku" label="SKU" placeholder="Unique per clinic" />
           <TextField name="batch_number" label="Batch number" />
           <TextField name="expiry_date" label="Expiry date" type="date" />
-          <TextField name="supplier_name" label="Supplier" />
+          <TextField name="supplier_name" label="Supplier" required />
           <TextField name="cost_price" label="Cost price" placeholder="0.00" />
           <TextField
             name="selling_price"

@@ -91,14 +91,15 @@ def clean_text(v) -> str | None:
     return s
 
 
-def clean_supplier(v) -> str | None:
+def clean_supplier(v) -> str:
+    """Returns a non-empty supplier string ('Unknown' when missing)."""
     s = clean_text(v)
     if s is None:
-        return None
+        return "Unknown"
     # Strip embedded phone numbers (7+ consecutive digits surrounded by spaces/punct).
     s = re.sub(r"\s*\d{7,}\s*", " ", s).strip()
     s = re.sub(r"\s+", " ", s)
-    return s if s else None
+    return s if s else "Unknown"
 
 
 STOCK_SANITY_CAP = 100_000  # any "stock" above this is almost certainly a
@@ -153,7 +154,7 @@ def main(path: str) -> int:
         return 1
     ws = wb[SHEET]
 
-    records: list[tuple[str, str | None, str | None, int, str | None]] = []
+    records: list[tuple[str, str, str | None, int, str | None]] = []
     current_category: str | None = None
     current_subcategory: str | None = None
     skipped_no_name = 0

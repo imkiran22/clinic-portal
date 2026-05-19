@@ -13,7 +13,7 @@ export type Product = {
   sku: string | null
   batch_number: string | null
   expiry_date: string | null // ISO date YYYY-MM-DD
-  supplier_name: string | null
+  supplier_name: string
   cost_price: number
   selling_price: number
   current_stock: number
@@ -30,7 +30,7 @@ export type ProductInput = {
   sku: string | null
   batch_number: string | null
   expiry_date: string | null
-  supplier_name: string | null
+  supplier_name: string
   cost_price: number
   selling_price: number
   reorder_level: number

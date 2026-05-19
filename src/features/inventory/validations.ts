@@ -7,7 +7,7 @@ export const productFormSchema = z.object({
   sku: z.string(),
   batch_number: z.string(),
   expiry_date: z.string(), // 'YYYY-MM-DD' from <input type="date"> or ''
-  supplier_name: z.string(),
+  supplier_name: z.string().min(1, 'Supplier is required'),
   cost_price: z
     .string()
     .regex(/^$|^\d+(\.\d{1,2})?$/, 'Numbers only (up to 2 decimals)'),
@@ -47,7 +47,7 @@ export function toProductCreateInput(values: ProductFormValues) {
     sku: trimOrNull(values.sku),
     batch_number: trimOrNull(values.batch_number),
     expiry_date: values.expiry_date || null,
-    supplier_name: trimOrNull(values.supplier_name),
+    supplier_name: values.supplier_name.trim(),
     cost_price: values.cost_price === '' ? 0 : Number(values.cost_price),
     selling_price: values.selling_price === '' ? 0 : Number(values.selling_price),
     reorder_level: values.reorder_level === '' ? 0 : Number(values.reorder_level),
@@ -68,7 +68,7 @@ export function fromProduct(p: Product): ProductFormValues {
     sku: p.sku ?? '',
     batch_number: p.batch_number ?? '',
     expiry_date: p.expiry_date ?? '',
-    supplier_name: p.supplier_name ?? '',
+    supplier_name: p.supplier_name,
     cost_price: p.cost_price === null ? '' : String(p.cost_price),
     selling_price: p.selling_price === null ? '' : String(p.selling_price),
     reorder_level: p.reorder_level === null ? '' : String(p.reorder_level),

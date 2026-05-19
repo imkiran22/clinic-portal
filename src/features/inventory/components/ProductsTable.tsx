@@ -43,6 +43,7 @@ export default defineComponent({
               <th class="px-4 py-2 font-medium">Name</th>
               <th class="px-4 py-2 font-medium">Category</th>
               <th class="px-4 py-2 font-medium">SKU</th>
+              <th class="px-4 py-2 font-medium">Supplier</th>
               <th class="px-4 py-2 font-medium text-right w-28">Stock</th>
               <th class="px-4 py-2 font-medium">Expiry</th>
               <th class="px-4 py-2 font-medium text-right">Price</th>
@@ -62,6 +63,9 @@ export default defineComponent({
                 </td>
                 <td class="px-4 py-2 text-muted-foreground tabular-nums">
                   {p.sku ?? '—'}
+                </td>
+                <td class="px-4 py-2 text-muted-foreground">
+                  {p.supplier_name}
                 </td>
                 <td class="px-4 py-2 text-right">
                   <span class="inline-flex items-center justify-end gap-2">
