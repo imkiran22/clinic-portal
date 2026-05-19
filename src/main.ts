@@ -4,6 +4,7 @@ import { queryClient } from '@/lib/query-client'
 import { router } from '@/router'
 import App from './App'
 import '@/styles/globals.css'
+import 'vue-sonner/style.css'
 
 createApp(App)
   .use(router)
