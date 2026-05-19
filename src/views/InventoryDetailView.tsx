@@ -1,6 +1,12 @@
 import { computed, defineComponent, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, ArrowUpDown, Pencil, Trash2 } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  Pencil,
+  ShoppingCart,
+  Trash2,
+} from 'lucide-vue-next'
 import {
   useMovementsFor,
   useProduct,
@@ -8,6 +14,7 @@ import {
 import { useSoftDeleteProduct } from '@/features/inventory/composables/useProductMutations'
 import ProductFormDialog from '@/features/inventory/components/ProductFormDialog'
 import RecordMovementDialog from '@/features/inventory/components/RecordMovementDialog'
+import SellProductDialog from '@/features/inventory/components/SellProductDialog'
 import MovementsTable from '@/features/inventory/components/MovementsTable'
 import StockBadge from '@/features/inventory/components/StockBadge'
 import ExpiryBadge from '@/features/inventory/components/ExpiryBadge'
@@ -42,6 +49,7 @@ export default defineComponent({
 
     const editOpen = ref(false)
     const movementOpen = ref(false)
+    const sellOpen = ref(false)
     const confirmOpen = ref(false)
     const softDeleteMut = useSoftDeleteProduct()
 
@@ -136,11 +144,19 @@ export default defineComponent({
                     <ExpiryBadge expiryDate={product.value.expiry_date} />
                   </p>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => (sellOpen.value = true)}
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                  >
+                    <ShoppingCart class="size-4" />
+                    <span>Sell</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => (movementOpen.value = true)}
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-accent"
                   >
                     <ArrowUpDown class="size-4" />
                     <span>Record movement</span>
@@ -210,6 +226,12 @@ export default defineComponent({
               open={movementOpen.value}
               product={product.value}
               onUpdate:open={(v: boolean) => (movementOpen.value = v)}
+            />
+
+            <SellProductDialog
+              open={sellOpen.value}
+              product={product.value}
+              onUpdate:open={(v: boolean) => (sellOpen.value = v)}
             />
 
             <ConfirmDialog

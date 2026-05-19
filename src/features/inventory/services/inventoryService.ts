@@ -117,14 +117,39 @@ export const inventoryService = {
     return data as StockMovement
   },
 
+  async sellProduct(
+    sb: AppSupabaseClient,
+    args: {
+      product_id: string
+      patient_id: string
+      visit_id?: string | null
+      quantity: number
+      remarks?: string | null
+    },
+  ): Promise<StockMovement> {
+    const { data, error } = await sb.rpc('sell_product', {
+      p_product_id: args.product_id,
+      p_patient_id: args.patient_id,
+      p_visit_id: args.visit_id ?? null,
+      p_quantity: args.quantity,
+      p_remarks: args.remarks ?? null,
+    })
+    if (error) throw error
+    return data as StockMovement
+  },
+
   async listMovements(
     sb: AppSupabaseClient,
     productId: string,
     limit = 100,
   ): Promise<StockMovement[]> {
+    // Embed the patient via the FK relationship so sale rows can show
+    // who the product was sold to. Soft-deleted patients still resolve
+    // because RLS on `patients` is tenant-scoped only — `deleted_at`
+    // filtering lives in the patients_active view, not at the table.
     const { data, error } = await sb
       .from('stock_movements')
-      .select('*')
+      .select('*, patient:patients(id, name)')
       .eq('product_id', productId)
       .order('created_at', { ascending: false })
       .limit(limit)

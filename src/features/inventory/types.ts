@@ -54,6 +54,9 @@ export type StockMovement = {
   created_by: string | null
   created_by_display: string | null
   created_at: string
+  // Embedded via select join — present on rows that reference a patient
+  // (SALE, PROCEDURE_USAGE). NULL for inventory-only movements.
+  patient?: { id: string; name: string } | null
 }
 
 // UI movement type — five options that map to four enum values in DB.

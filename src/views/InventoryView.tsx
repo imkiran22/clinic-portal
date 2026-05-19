@@ -9,6 +9,7 @@ import { useSoftDeleteProduct } from '@/features/inventory/composables/useProduc
 import ProductsTable from '@/features/inventory/components/ProductsTable'
 import ProductFormDialog from '@/features/inventory/components/ProductFormDialog'
 import RecordMovementDialog from '@/features/inventory/components/RecordMovementDialog'
+import SellProductDialog from '@/features/inventory/components/SellProductDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Pagination from '@/components/shared/Pagination'
 import type { Product } from '@/features/inventory/types'
@@ -38,6 +39,9 @@ export default defineComponent({
     const movementOpen = ref(false)
     const movementProduct = ref<Product | null>(null)
 
+    const sellOpen = ref(false)
+    const sellProduct = ref<Product | null>(null)
+
     const confirmOpen = ref(false)
     const deleting = ref<Product | null>(null)
     const softDeleteMut = useSoftDeleteProduct()
@@ -53,6 +57,10 @@ export default defineComponent({
     const openRecordMovement = (p: Product) => {
       movementProduct.value = p
       movementOpen.value = true
+    }
+    const openSell = (p: Product) => {
+      sellProduct.value = p
+      sellOpen.value = true
     }
     const requestDelete = (p: Product) => {
       deleting.value = p
@@ -141,6 +149,7 @@ export default defineComponent({
                 onEdit={openEdit}
                 onDelete={requestDelete}
                 onRecordMovement={openRecordMovement}
+                onSell={openSell}
               />
             </div>
           )}
@@ -167,6 +176,12 @@ export default defineComponent({
           open={movementOpen.value}
           product={movementProduct.value}
           onUpdate:open={(v: boolean) => (movementOpen.value = v)}
+        />
+
+        <SellProductDialog
+          open={sellOpen.value}
+          product={sellProduct.value}
+          onUpdate:open={(v: boolean) => (sellOpen.value = v)}
         />
 
         <ConfirmDialog

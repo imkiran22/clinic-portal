@@ -64,3 +64,24 @@ export function useRecordMovement() {
     onError: (err) => toast.error(toUserError(err)),
   })
 }
+
+export function useSellProduct() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: {
+      product_id: string
+      patient_id: string
+      quantity: number
+      remarks?: string | null
+    }) => inventoryService.sellProduct(supabase, args),
+    onSuccess: (movement) => {
+      qc.invalidateQueries({ queryKey: productKeys.lists() })
+      qc.invalidateQueries({ queryKey: productKeys.detail(movement.product_id) })
+      qc.invalidateQueries({
+        queryKey: movementKeys.byProduct(movement.product_id),
+      })
+      toast.success('Sale recorded')
+    },
+    onError: (err) => toast.error(toUserError(err)),
+  })
+}

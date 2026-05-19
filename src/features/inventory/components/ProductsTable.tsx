@@ -1,5 +1,5 @@
 import { defineComponent, type PropType } from 'vue'
-import { Pencil, Trash2, ArrowUpDown } from 'lucide-vue-next'
+import { Pencil, Trash2, ArrowUpDown, ShoppingCart } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import type { Product } from '../types'
 import StockBadge from './StockBadge'
@@ -29,6 +29,10 @@ export default defineComponent({
       type: Function as PropType<(p: Product) => void>,
       required: true,
     },
+    onSell: {
+      type: Function as PropType<(p: Product) => void>,
+      required: true,
+    },
   },
   setup(props) {
     const router = useRouter()
@@ -47,7 +51,7 @@ export default defineComponent({
               <th class="px-4 py-2 font-medium text-right w-28">Stock</th>
               <th class="px-4 py-2 font-medium">Expiry</th>
               <th class="px-4 py-2 font-medium text-right">Price</th>
-              <th class="px-4 py-2 font-medium w-32 text-right">Actions</th>
+              <th class="px-4 py-2 font-medium w-40 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -92,6 +96,15 @@ export default defineComponent({
                   onClick={(e: MouseEvent) => e.stopPropagation()}
                 >
                   <div class="inline-flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => props.onSell(p)}
+                      class="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                      title="Sell to patient"
+                      aria-label="Sell to patient"
+                    >
+                      <ShoppingCart class="size-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => props.onRecordMovement(p)}

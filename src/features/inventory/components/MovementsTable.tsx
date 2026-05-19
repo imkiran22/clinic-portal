@@ -46,6 +46,7 @@ export default defineComponent({
                 <th class="px-4 py-2 font-medium">When</th>
                 <th class="px-4 py-2 font-medium">Type</th>
                 <th class="px-4 py-2 font-medium text-right">Qty</th>
+                <th class="px-4 py-2 font-medium">Patient</th>
                 <th class="px-4 py-2 font-medium">By</th>
                 <th class="px-4 py-2 font-medium">Remarks</th>
               </tr>
@@ -65,6 +66,9 @@ export default defineComponent({
                   </td>
                   <td class="px-4 py-2 text-right tabular-nums font-medium">
                     {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
+                  </td>
+                  <td class="px-4 py-2 text-muted-foreground">
+                    {m.patient?.name ?? '—'}
                   </td>
                   <td class="px-4 py-2 text-muted-foreground">
                     {m.created_by_display ?? '—'}
