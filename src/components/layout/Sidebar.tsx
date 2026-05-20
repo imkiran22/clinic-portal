@@ -50,35 +50,13 @@ export default defineComponent({
               <RouterLink
                 key={item.to}
                 to={item.to}
-                custom
-                v-slots={{
-                  default: ({
-                    navigate,
-                    isActive,
-                  }: {
-                    navigate: () => void
-                    isActive: boolean
-                  }) => (
-                    <a
-                      href={item.to}
-                      onClick={(e: MouseEvent) => {
-                        e.preventDefault()
-                        navigate()
-                        props.onClose()
-                      }}
-                      class={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-                        isActive
-                          ? 'bg-accent text-accent-foreground'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                      )}
-                    >
-                      <item.icon class="size-4" />
-                      <span>{item.label}</span>
-                    </a>
-                  ),
-                }}
-              />
+                onClick={() => props.onClose()}
+                activeClass="bg-accent text-accent-foreground"
+                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                <item.icon class="size-4" />
+                <span>{item.label}</span>
+              </RouterLink>
             ))}
           </nav>
         </aside>
