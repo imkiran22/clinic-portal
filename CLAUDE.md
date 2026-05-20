@@ -4,7 +4,7 @@
 A web-based internal clinic management portal for a dermatology/skin clinic. Replaces Excel-based workflows for: patient management, inventory/stock tracking with full audit history, product sales, and treatment/visit notes. **Operational software, not an accounting/billing ERP.**
 
 ## Current status
-**M1–M7 done. Next: M8 — Dashboard (four cards backed by parallel queries).**
+**M1–M8 done. M9 (polish) underway: global ErrorBoundary in place; mobile sidebar drawer, skeletons, empty states, and 404 already shipped.**
 
 Shipped so far:
 - **M1** scaffold (Vue 3 + Vite + TSX), AppShell with sidebar/topbar/dark-mode toggle.
@@ -13,7 +13,8 @@ Shipped so far:
 - **M4** Patients CRUD with debounced search, fixed-bottom pagination (100/page), soft delete, auto-numbered `legacy_client_no`. 523 real patients imported from xlsx.
 - **M5** Inventory CRUD + non-sale movements (PURCHASE / ADJUSTMENT ±/ DAMAGE / EXPIRED) + stock + expiry badges. Added `category` (free-text, derived from maroon xlsx headers) and `notes` columns + supplier required. 483 real products imported from STOCKLIST.xlsx (top-level maroon categories + light-blue sub-categories joined as `HAIR SERUMS / MINOXIDIL` etc.).
 - **M6** Sell flow via `sell_product` RPC: reusable PatientPicker, SellProductDialog, ShoppingCart icon on every product row + primary Sell button on detail page. Movement history now shows the patient name for SALE rows via embedded `select('*, patient:patients(id, name)')`.
-- **M7** Visits with prescriptions via `create_visit_with_prescriptions` RPC. New `src/features/visits/` feature folder; reusable `ProductPicker` (in-stock filter on by default); `PrescriptionLines` multi-row editor with per-line stock check and duplicate-line guard; paginated newest-first `VisitsView`; `NewVisitView` form (supports `?patient_id=` deep-link); `VisitDetailModal` resolves product names by reading `stock_movements` (source of truth) with embedded `product:products(...)`. Visit history card added to PatientDetailView.
+- **M7** Visits with prescriptions via `create_visit_with_prescriptions` RPC. New `src/features/visits/` feature folder; reusable `ProductPicker` (in-stock filter on by default); `PrescriptionLines` multi-row editor with per-line stock check and duplicate-line guard; paginated newest-first `VisitsView`; `NewVisitView` form (supports `?patient_id=` UUID *or* `legacy_client_no` deep-link); `VisitDetailModal` resolves product names by reading `stock_movements` (source of truth) with embedded `product:products(...)`. Visit history card added to PatientDetailView.
+- **M8** Dashboard with five parallel TanStack queries: Low Stock (via `products_low_stock` view, migration 0013), Expiring Soon (≤60d, with stock), Today's follow-ups, Upcoming follow-ups (next 3 days, full-row span, labels "Tomorrow" / "Day after tomorrow" / calendar form), Recent Sales (last 10). Accent borders/badges are state-driven — only light up when there's something to flag. Card palette mirrors the inventory `StockBadge` so dark-mode contrast stays readable.
 
 Additional migrations beyond the original M2 set:
 - `0007_patients_legacy_client_no.sql` — adds the int column + partial unique index, refreshes patients_active view
@@ -22,11 +23,12 @@ Additional migrations beyond the original M2 set:
 - `0010_products_category.sql` — adds the free-text category column + index
 - `0011_products_notes.sql` — adds the notes column + recreates the RPC with `p_notes`
 - `0012_products_supplier_required.sql` — backfills NULL suppliers to 'Unknown' and adds NOT NULL constraint
+- `0013_view_products_low_stock.sql` — `products_low_stock` view (current_stock <= reorder_level AND reorder_level > 0); powers the M8 Low Stock card
 
 Known issues to revisit:
 - **Inventory search "doesn't filter"** symptom user reported on 2026-05-19 — no console errors. Needs DevTools Network-tab investigation when user encounters it again.
 
-Remaining: **M8** (dashboard) → **M9** (polish). Canonical roadmap in [PLAN.md](./PLAN.md).
+Remaining: **M9** (polish — finish), **M10** (hardening, optional). Canonical roadmap in [PLAN.md](./PLAN.md).
 
 When in doubt about scope or design, defer to PLAN.md.
 
