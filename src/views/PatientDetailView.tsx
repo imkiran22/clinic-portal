@@ -1,10 +1,14 @@
 import { computed, defineComponent, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Pencil, Trash2, ArrowLeft } from 'lucide-vue-next'
+import { Pencil, Trash2, ArrowLeft, Plus } from 'lucide-vue-next'
 import { usePatient } from '@/features/patients/composables/usePatients'
 import { useSoftDeletePatient } from '@/features/patients/composables/usePatientMutations'
 import PatientFormDialog from '@/features/patients/components/PatientFormDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import { useVisitsForPatient } from '@/features/visits/composables/useVisits'
+import VisitsTable from '@/features/visits/components/VisitsTable'
+import VisitDetailModal from '@/features/visits/components/VisitDetailModal'
+import type { Visit } from '@/features/visits/types'
 
 function formatDate(s: string | null | undefined) {
   if (!s) return '—'
@@ -23,10 +27,30 @@ export default defineComponent({
     const id = computed(() => route.params.id as string)
 
     const { data, isLoading, isError, error } = usePatient(id)
+    const { data: visits, isLoading: visitsLoading } = useVisitsForPatient(id)
 
     const editOpen = ref(false)
     const confirmOpen = ref(false)
     const softDeleteMut = useSoftDeletePatient()
+
+    const selectedVisit = ref<Visit | null>(null)
+    const visitDetailOpen = ref(false)
+    const openVisit = (v: Visit) => {
+      // The patient list query selects '*' (no patient embed), so attach the
+      // already-loaded patient before opening the detail modal — it expects
+      // visit.patient to be populated.
+      selectedVisit.value = data.value
+        ? {
+            ...v,
+            patient: {
+              id: data.value.id,
+              name: data.value.name,
+              legacy_client_no: data.value.legacy_client_no,
+            },
+          }
+        : v
+      visitDetailOpen.value = true
+    }
 
     const performDelete = async () => {
       if (!data.value) return
@@ -129,9 +153,61 @@ export default defineComponent({
               </div>
             </div>
 
-            <div class="rounded-md border border-dashed border-border px-6 py-8 text-center text-sm text-muted-foreground">
-              Visit history tab arrives in M7.
+            <div class="rounded-md border border-border bg-card">
+              <div class="flex items-center justify-between gap-4 px-6 py-3 border-b border-border">
+                <div>
+                  <h2 class="text-base font-semibold">Visit history</h2>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {visitsLoading.value
+                      ? 'Loading…'
+                      : `${(visits.value ?? []).length} visit${
+                          (visits.value ?? []).length === 1 ? '' : 's'
+                        }`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push({
+                      name: 'visit-new',
+                      query: { patient_id: data.value!.id },
+                    })
+                  }
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+                >
+                  <Plus class="size-4" />
+                  <span>New visit</span>
+                </button>
+              </div>
+              <div class="p-4">
+                {visitsLoading.value ? (
+                  <div class="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        class="h-10 rounded-md bg-muted/40 animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : (visits.value ?? []).length === 0 ? (
+                  <div class="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                    No visits recorded yet.
+                  </div>
+                ) : (
+                  <VisitsTable
+                    visits={visits.value ?? []}
+                    showPatient={false}
+                    onOpen={openVisit}
+                  />
+                )}
+              </div>
             </div>
+
+            <VisitDetailModal
+              open={visitDetailOpen.value}
+              visit={selectedVisit.value}
+              onUpdate:open={(v: boolean) => (visitDetailOpen.value = v)}
+            />
 
             <PatientFormDialog
               open={editOpen.value}
