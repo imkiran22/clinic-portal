@@ -55,6 +55,11 @@ const routes: RouteRecordRaw[] = [
         name: 'visit-new',
         component: () => import('@/views/NewVisitView'),
       },
+      {
+        path: 'help',
+        name: 'help',
+        component: () => import('@/views/HelpView'),
+      },
     ],
   },
   {

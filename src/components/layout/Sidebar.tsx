@@ -1,6 +1,6 @@
 import { defineComponent } from 'vue'
 import { RouterLink } from 'vue-router'
-import { LayoutDashboard, Users, Package, ClipboardList, X } from 'lucide-vue-next'
+import { LayoutDashboard, Users, Package, ClipboardList, CircleHelp, X } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard }
@@ -10,6 +10,7 @@ const items: NavItem[] = [
   { to: '/patients', label: 'Patients', icon: Users },
   { to: '/inventory', label: 'Inventory', icon: Package },
   { to: '/visits', label: 'Visits', icon: ClipboardList },
+  { to: '/help', label: 'Help', icon: CircleHelp },
 ]
 
 export default defineComponent({
