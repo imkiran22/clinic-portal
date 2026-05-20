@@ -4,7 +4,28 @@
 A web-based internal clinic management portal for a dermatology/skin clinic. Replaces Excel-based workflows for: patient management, inventory/stock tracking with full audit history, product sales, and treatment/visit notes. **Operational software, not an accounting/billing ERP.**
 
 ## Current status
-**Pre-M1 — planning complete, no code yet.** The canonical implementation plan is in [PLAN.md](./PLAN.md). The next concrete step is M1 — scaffolding the Vue 3 + Vite project. See PLAN.md → "Milestones" for the ordered roadmap (M1 → M10).
+**M1–M6 done. Next: M7 — Visits with prescribed-products via `create_visit_with_prescriptions` RPC.**
+
+Shipped so far:
+- **M1** scaffold (Vue 3 + Vite + TSX), AppShell with sidebar/topbar/dark-mode toggle.
+- **M2** six base migrations (clinics, profiles, helper fn, domain tables, RLS, dev seed, visit-with-prescriptions RPC).
+- **M3** Supabase auth, Vue Router guard (auth + profile check), Login + Contact-admin views.
+- **M4** Patients CRUD with debounced search, fixed-bottom pagination (100/page), soft delete, auto-numbered `legacy_client_no`. 523 real patients imported from xlsx.
+- **M5** Inventory CRUD + non-sale movements (PURCHASE / ADJUSTMENT ±/ DAMAGE / EXPIRED) + stock + expiry badges. Added `category` (free-text, derived from maroon xlsx headers) and `notes` columns + supplier required. 483 real products imported from STOCKLIST.xlsx (top-level maroon categories + light-blue sub-categories joined as `HAIR SERUMS / MINOXIDIL` etc.).
+- **M6** Sell flow via `sell_product` RPC: reusable PatientPicker, SellProductDialog, ShoppingCart icon on every product row + primary Sell button on detail page. Movement history now shows the patient name for SALE rows via embedded `select('*, patient:patients(id, name)')`.
+
+Additional migrations beyond the original M2 set:
+- `0007_patients_legacy_client_no.sql` — adds the int column + partial unique index, refreshes patients_active view
+- `0008_auto_assign_legacy_client_no.sql` — BEFORE INSERT trigger that picks MAX+1 when blank
+- `0009_rpc_create_product_with_stock.sql` — atomic create-product + initial PURCHASE (later superseded by 0011)
+- `0010_products_category.sql` — adds the free-text category column + index
+- `0011_products_notes.sql` — adds the notes column + recreates the RPC with `p_notes`
+- `0012_products_supplier_required.sql` — backfills NULL suppliers to 'Unknown' and adds NOT NULL constraint
+
+Known issues to revisit:
+- **Inventory search "doesn't filter"** symptom user reported on 2026-05-19 — no console errors. Needs DevTools Network-tab investigation when user encounters it again.
+
+Remaining: **M7** (visits with prescriptions) → **M8** (dashboard) → **M9** (polish). Canonical roadmap in [PLAN.md](./PLAN.md).
 
 When in doubt about scope or design, defer to PLAN.md.
 
