@@ -41,17 +41,19 @@ export default defineComponent({
     const formError = ref<string | null>(null)
     const lineErrors = ref<(string | null)[]>([])
 
-    // Optional ?patient_id=... — pre-select the patient when arriving from
-    // PatientDetailView. Silent failure is fine; the picker stays empty.
+    // Optional ?patient_id=... — pre-select the patient. Accepts either a
+    // UUID (used by the "New visit" button on PatientDetailView) or a numeric
+    // legacy_client_no so the URL is friendly to type/share.
     onMounted(async () => {
       const pid = route.query.patient_id
-      if (typeof pid === 'string' && pid) {
-        try {
-          const p = await patientService.get(supabase, pid)
-          if (p) state.patient = p
-        } catch {
-          /* ignore */
-        }
+      if (typeof pid !== 'string' || !pid) return
+      try {
+        const p = /^\d+$/.test(pid)
+          ? await patientService.getByLegacyNo(supabase, Number(pid))
+          : await patientService.get(supabase, pid)
+        if (p) state.patient = p
+      } catch {
+        /* ignore — picker stays empty, user can pick manually */
       }
     })
 

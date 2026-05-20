@@ -53,6 +53,19 @@ export const patientService = {
     return (data as Patient | null) ?? null
   },
 
+  async getByLegacyNo(
+    sb: AppSupabaseClient,
+    legacyNo: number,
+  ): Promise<Patient | null> {
+    const { data, error } = await sb
+      .from('patients_active')
+      .select('*')
+      .eq('legacy_client_no', legacyNo)
+      .maybeSingle()
+    if (error) throw error
+    return (data as Patient | null) ?? null
+  },
+
   async create(sb: AppSupabaseClient, input: PatientInput): Promise<Patient> {
     const clinic_id = await getCurrentClinicId(sb)
     if (!clinic_id) throw new Error('No clinic profile for current user')
