@@ -4,30 +4,28 @@
 
 @layer base {
   :root {
-    /* Whitesmoke-ish with a whisper of warmth. 96% lightness (was 97
-       and felt too close to pure white), low saturation (was 12% and
-       read cream). Page sits slightly below pure-white cards so the
-       elevation hierarchy stays — cards lift above page in light mode
-       (opposite of dark mode, where cards lift above a darker page). */
-    --background: 30 6% 96%;
-    --foreground: 220 25% 18%;
+    /* Pure neutral whitesmoke — zero saturation everywhere so the page
+       doesn't read as cream / solarized. Page sits below pure-white
+       cards (cards lift in light mode, opposite of dark mode). */
+    --background: 0 0% 96%;
+    --foreground: 0 0% 18%;
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 18%;
+    --card-foreground: 0 0% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 18%;
-    --primary: 220 25% 18%;
-    --primary-foreground: 30 6% 96%;
-    --secondary: 30 6% 93%;
-    --secondary-foreground: 220 25% 18%;
-    --muted: 30 6% 93%;
-    --muted-foreground: 220 12% 42%;
-    --accent: 30 6% 91%;
-    --accent-foreground: 220 25% 18%;
+    --popover-foreground: 0 0% 18%;
+    --primary: 0 0% 18%;
+    --primary-foreground: 0 0% 96%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 18%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 0 0% 91%;
+    --accent-foreground: 0 0% 18%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 6% 88%;
-    --input: 30 6% 88%;
-    --ring: 220 25% 18%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 0 0% 18%;
     --radius: 0.5rem;
   }
 
