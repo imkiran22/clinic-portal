@@ -90,6 +90,7 @@ const ALL_SECTIONS: TocEntry[] = [
   { id: 'suppliers', label: 'Suppliers', privileged: true },
   { id: 'visits', label: 'Visits & prescriptions' },
   { id: 'sales', label: 'Sales' },
+  { id: 'movements', label: 'Stock movements' },
   { id: 'roles', label: 'Roles & permissions' },
   { id: 'troubleshoot', label: 'Troubleshooting' },
   { id: 'admin', label: 'For admins', adminOnly: true },
@@ -640,6 +641,57 @@ export default defineComponent({
               with the product's <em>current</em> selling price; if you
               change a price later the historical line totals will shift to
               the new price.
+            </p>
+          </Section>
+
+          <Section id="movements" title="Stock movements">
+            <p>
+              <strong>Movements</strong> in the sidebar shows every change
+              in inventory across <em>all</em> products in one place —
+              purchases, sales, adjustments, damage, expired write-offs.
+              Use this instead of opening each product individually when
+              you want a bird's-eye view of stock activity.
+            </p>
+
+            <h3 class="text-base font-medium pt-2">How it differs from Sales</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Sales</strong> shows only SALE rows, with revenue
+                stats. Use it for "what did we earn / dispense?".
+              </li>
+              <li>
+                <strong>Movements</strong> shows all types, no revenue
+                totals. Use it for "where did the stock go?" or "when
+                did we last receive Dershine?".
+              </li>
+            </ul>
+
+            <h3 class="text-base font-medium pt-2">Filtering</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Type chips</strong>: click Purchase, Sale,
+                Adjustment, Damage, or Expired to narrow to one or more.
+                None active = show all types.
+              </li>
+              <li>
+                <strong>From / To</strong>: calendar-day range. Leave
+                blank for no bound.
+              </li>
+              <li>
+                <strong>Product</strong>: multi-select — drill into the
+                history of one or more specific products without opening
+                their detail pages.
+              </li>
+            </ul>
+
+            <h3 class="text-base font-medium pt-2">The table</h3>
+            <p>
+              Newest first, 50 per page. <strong>Qty</strong> is{' '}
+              <em>signed</em> — inflows show as <code>+5</code>, outflows
+              as <code>−2</code>. Patient column is filled for SALE rows
+              (and procedure-use rows); blank for stock-only movements.
+              Click product or patient names to jump to their detail
+              pages.
             </p>
           </Section>
 

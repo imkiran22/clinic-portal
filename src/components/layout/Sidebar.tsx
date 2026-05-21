@@ -9,6 +9,7 @@ import {
   Tags,
   Truck,
   ShoppingCart,
+  ArrowRightLeft,
   X,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
@@ -29,6 +30,7 @@ const items: NavItem[] = [
   { to: '/suppliers', label: 'Suppliers', icon: Truck, privileged: true },
   { to: '/visits', label: 'Visits', icon: ClipboardList },
   { to: '/sales', label: 'Sales', icon: ShoppingCart },
+  { to: '/movements', label: 'Movements', icon: ArrowRightLeft },
   { to: '/help', label: 'Help', icon: CircleHelp },
 ]
 
