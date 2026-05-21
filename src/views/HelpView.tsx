@@ -1,9 +1,10 @@
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import {
   Users,
   Package,
   ClipboardList,
   ShoppingCart,
+  Tags,
   Plus,
   AlertTriangle,
   Sun,
@@ -13,20 +14,12 @@ import {
   Wrench,
   CircleHelp,
 } from 'lucide-vue-next'
+import { useCan } from '@/features/auth/composables/useCan'
 
 // In-app help. Plain HTML/Tailwind with anchored sections so non-technical
-// staff can read straight through or jump to what they need. Update the
-// content here when flows change — it's the canonical user-facing doc.
-
-const sections = [
-  { id: 'getting-started', label: 'Getting started' },
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'patients', label: 'Patients' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'visits', label: 'Visits & prescriptions' },
-  { id: 'troubleshoot', label: 'Troubleshooting' },
-  { id: 'admin', label: 'For admins' },
-]
+// staff can read straight through or jump to what they need. Some sections
+// are privileged-only (admin/doctor) and hidden for the limited tier so
+// they aren't presented with instructions for buttons they don't have.
 
 const Section = defineComponent({
   name: 'HelpSection',
@@ -80,9 +73,32 @@ const Kbd = defineComponent({
   },
 })
 
+type TocEntry = { id: string; label: string; privileged?: boolean }
+
+const ALL_SECTIONS: TocEntry[] = [
+  { id: 'getting-started', label: 'Getting started' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'patients', label: 'Patients' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'categories', label: 'Categories', privileged: true },
+  { id: 'visits', label: 'Visits & prescriptions' },
+  { id: 'sales', label: 'Sales' },
+  { id: 'roles', label: 'Roles & permissions' },
+  { id: 'troubleshoot', label: 'Troubleshooting' },
+  { id: 'admin', label: 'For admins', privileged: true },
+]
+
 export default defineComponent({
   name: 'HelpView',
   setup() {
+    const { canManageProducts } = useCan()
+
+    const visibleSections = computed(() =>
+      ALL_SECTIONS.filter(
+        (s) => !s.privileged || canManageProducts.value,
+      ),
+    )
+
     return () => (
       <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-8">
         {/* TOC */}
@@ -91,7 +107,7 @@ export default defineComponent({
             On this page
           </div>
           <nav class="flex flex-col gap-1 text-sm">
-            {sections.map((s) => (
+            {visibleSections.value.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
@@ -114,515 +130,598 @@ export default defineComponent({
               How to use the Clinic Portal
             </h1>
             <p class="text-sm text-muted-foreground">
-              A walkthrough for daily clinic operations — patient records,
-              inventory, dispensing, and visit notes. Skim the section you
-              need or read straight through.
+              A walkthrough for daily clinic operations — patients, inventory,
+              dispensing, visits, and sales. Skim the section you need or read
+              straight through.
             </p>
           </header>
 
           <Section id="getting-started" title="Getting started">
-            
-                <p>
-                  Sign in with the email and password your admin set up for
-                  you. After signing in you'll land on the{' '}
-                  <strong>Dashboard</strong>. Use the left sidebar to switch
-                  between Dashboard, Patients, Inventory, Visits, and this
-                  Help page.
-                </p>
-                <p class="flex flex-wrap items-center gap-2">
-                  Top-right of every screen:
-                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-xs">
-                    <Sun class="size-3" />/<Moon class="size-3" /> theme
-                  </span>
-                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-xs">
-                    <LogOut class="size-3" /> sign out
-                  </span>
-                </p>
-                <Note kind="tip">
-                  
-                      On a phone? Tap the menu icon in the top-left to open
-                      the sidebar — it slides out as a drawer on small
-                      screens.
-                    
-                </Note>
-              
+            <p>
+              Sign in with the email and password your admin set up for you.
+              After signing in you'll land on the <strong>Dashboard</strong>.
+              Use the left sidebar to switch between sections.
+            </p>
+            <p class="flex flex-wrap items-center gap-2">
+              Top-right of every screen:
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-xs">
+                <Sun class="size-3" />/<Moon class="size-3" /> theme
+              </span>
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-xs">
+                <LogOut class="size-3" /> sign out
+              </span>
+            </p>
+            <Note kind="tip">
+              On a phone? Tap the menu icon in the top-left to open the
+              sidebar — it slides out as a drawer on small screens.
+            </Note>
+            <Note kind="info">
+              Some buttons (e.g. <strong>New product</strong>,{' '}
+              <strong>New visit</strong>, the remove icons) only appear for
+              admin / doctor accounts. See the{' '}
+              <a href="#roles" class="underline">Roles & permissions</a>{' '}
+              section for the full breakdown — if you don't see a button
+              someone else does, it's likely a role thing.
+            </Note>
           </Section>
 
           <Section id="dashboard" title="Dashboard">
-            
-                <p>
-                  Five cards summarise the state of the clinic right now.
-                  Cards stay grey when there's nothing to flag — they light
-                  up with colour only when there's something worth your
-                  attention.
-                </p>
-                <ul class="space-y-2 list-none pl-0">
-                  <li class="flex gap-3 items-start">
-                    <Package class="size-4 mt-0.5 text-red-700 dark:text-red-400 shrink-0" />
-                    <div>
-                      <strong>Low stock</strong> — products at or below their
-                      reorder level. Click a row to open that product.
-                    </div>
-                  </li>
-                  <li class="flex gap-3 items-start">
-                    <AlertTriangle class="size-4 mt-0.5 text-amber-700 dark:text-amber-400 shrink-0" />
-                    <div>
-                      <strong>Expiring soon</strong> — batches with stock
-                      expiring within 60 days. Turns red once any batch is
-                      within 14 days.
-                    </div>
-                  </li>
-                  <li class="flex gap-3 items-start">
-                    <ClipboardList class="size-4 mt-0.5 text-sky-700 dark:text-sky-400 shrink-0" />
-                    <div>
-                      <strong>Today's follow-ups</strong> — patients due back
-                      today, based on the follow-up date set on their last
-                      visit. Click a name to open the patient.
-                    </div>
-                  </li>
-                  <li class="flex gap-3 items-start">
-                    <ClipboardList class="size-4 mt-0.5 text-sky-700 dark:text-sky-400 shrink-0" />
-                    <div>
-                      <strong>Upcoming follow-ups</strong> — the next 3 days.
-                      Rows read "Tomorrow", "Day after tomorrow", or the
-                      actual date.
-                    </div>
-                  </li>
-                  <li class="flex gap-3 items-start">
-                    <ShoppingCart class="size-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <div>
-                      <strong>Recent sales</strong> — the last 10 products
-                      dispensed, with quantity and how long ago.
-                    </div>
-                  </li>
-                </ul>
-                <Note kind="info">
-                  
-                      All five cards load in parallel — if one is slower or
-                      erroring, the others still render. A card with an{' '}
-                      <span class="text-red-700 dark:text-red-400 font-medium">Error</span>{' '}
-                      badge means that query failed — usually a temporary
-                      connection blip; refresh the page.
-                    
-                </Note>
-              
+            <p>
+              Five cards summarise the state of the clinic right now. Cards
+              stay grey when there's nothing to flag — they light up with
+              colour only when there's something worth your attention.
+            </p>
+            <ul class="space-y-2 list-none pl-0">
+              <li class="flex gap-3 items-start">
+                <Package class="size-4 mt-0.5 text-red-700 dark:text-red-400 shrink-0" />
+                <div>
+                  <strong>Low stock</strong> — products at or below their
+                  reorder level. Click a row to open that product.
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <AlertTriangle class="size-4 mt-0.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                <div>
+                  <strong>Expiring soon</strong> — batches with stock
+                  expiring within 60 days. Turns red once any batch is
+                  within 14 days.
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <ClipboardList class="size-4 mt-0.5 text-sky-700 dark:text-sky-400 shrink-0" />
+                <div>
+                  <strong>Today's follow-ups</strong> — patients due back
+                  today, based on the follow-up date set on their last
+                  visit. Click a name to open the patient.
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <ClipboardList class="size-4 mt-0.5 text-sky-700 dark:text-sky-400 shrink-0" />
+                <div>
+                  <strong>Upcoming follow-ups</strong> — the next 3 days.
+                  Rows read "Tomorrow", "Day after tomorrow", or the actual
+                  date.
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <ShoppingCart class="size-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div>
+                  <strong>Recent sales</strong> — the last 10 products
+                  dispensed. Click <strong>View all sales</strong> to open
+                  the full Sales page.
+                </div>
+              </li>
+            </ul>
+            <Note kind="info">
+              All five cards load in parallel — if one is slower or
+              erroring, the others still render. A card with an{' '}
+              <span class="text-red-700 dark:text-red-400 font-medium">Error</span>{' '}
+              badge means that query failed — usually a temporary connection
+              blip; refresh the page.
+            </Note>
           </Section>
 
           <Section id="patients" title="Patients">
-            
-                <p>
-                  Open <strong>Patients</strong> from the sidebar. The list
-                  shows every active patient with their client number,
-                  name, and phone. Search at the top filters by name,
-                  phone, or client number — type and results update as you
-                  go.
-                </p>
+            <p>
+              Open <strong>Patients</strong> from the sidebar. The list
+              shows every active patient with their client number, name, and
+              phone. Search at the top filters by name, phone, or client
+              number — type and results update as you go.
+            </p>
 
-                <h3 class="text-base font-medium pt-2">Add a patient</h3>
-                <ol class="list-decimal pl-5 space-y-1">
-                  <li>
-                    Click{' '}
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-xs">
-                      <Plus class="size-3" /> New patient
-                    </span>{' '}
-                    at the top right.
-                  </li>
-                  <li>
-                    Fill in <strong>name</strong> and{' '}
-                    <strong>phone</strong> at minimum. Age, gender, email,
-                    address, notes are optional.
-                  </li>
-                  <li>
-                    The <strong>Client #</strong> auto-fills if you leave it
-                    blank — the next number in sequence. You can override it
-                    only when adding (not editing).
-                  </li>
-                  <li>Click <strong>Save</strong>.</li>
-                </ol>
+            <h3 class="text-base font-medium pt-2">Add a patient</h3>
+            <ol class="list-decimal pl-5 space-y-1">
+              <li>
+                Click{' '}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-xs">
+                  <Plus class="size-3" /> New patient
+                </span>{' '}
+                at the top right. <em>(Available to all roles.)</em>
+              </li>
+              <li>
+                Fill in <strong>name</strong> and <strong>phone</strong> at
+                minimum. Age, gender, email, address, notes are optional.
+              </li>
+              <li>
+                The <strong>Client #</strong> auto-fills if you leave it
+                blank — the next number in sequence. You can override it
+                only when adding (not editing).
+              </li>
+              <li>Click <strong>Save</strong>.</li>
+            </ol>
 
-                <h3 class="text-base font-medium pt-2">Find or edit a patient</h3>
-                <p>
-                  Click the patient's row to open their detail page. From
-                  there you can <strong>Edit</strong>, <strong>Remove</strong>
-                  , or start a <strong>New visit</strong> with this patient
-                  pre-selected.
-                </p>
-                <Note kind="warn">
-                  
-                      "Remove" is a <strong>soft delete</strong>. The
-                      patient stops appearing in lists, but their visit and
-                      sales history is preserved. If you remove someone by
-                      mistake, ask your admin to restore.
-                    
-                </Note>
-              
+            <h3 class="text-base font-medium pt-2">Find or edit a patient</h3>
+            <p>
+              Click the patient's row to open their detail page. From there
+              you can <strong>Edit</strong> (all roles), or{' '}
+              <strong>Remove</strong> and start a <strong>New visit</strong>{' '}
+              (admin / doctor only).
+            </p>
+            <Note kind="warn">
+              "Remove" is a <strong>soft delete</strong>. The patient stops
+              appearing in lists, but their visit and sales history is
+              preserved. If you remove someone by mistake, ask your admin to
+              restore.
+            </Note>
           </Section>
 
           <Section id="inventory" title="Inventory">
-            
-                <p>
-                  Open <strong>Inventory</strong> from the sidebar. Each row
-                  shows the product, category, supplier, current stock, and
-                  expiry. Two badges to watch:
-                </p>
-                <ul class="space-y-1 pl-0">
-                  <li>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-700 dark:text-red-400">
-                      Out
-                    </span>{' '}
-                    — stock is zero.
-                  </li>
-                  <li>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                      Low
-                    </span>{' '}
-                    — stock is at or below its reorder level. Reorder is set
-                    per-product on creation/edit.
-                  </li>
-                </ul>
+            <p>
+              Open <strong>Inventory</strong> from the sidebar. Each row
+              shows the product, category, supplier, current stock, and
+              expiry. Two badges to watch:
+            </p>
+            <ul class="space-y-1 pl-0">
+              <li>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-700 dark:text-red-400">
+                  Out
+                </span>{' '}
+                — stock is zero.
+              </li>
+              <li>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                  Low
+                </span>{' '}
+                — stock is at or below its reorder level. Reorder level is
+                set per-product on creation / edit.
+              </li>
+            </ul>
 
-                <h3 class="text-base font-medium pt-2">Add a product</h3>
-                <ol class="list-decimal pl-5 space-y-1">
-                  <li>
-                    Click <strong>New product</strong>.
-                  </li>
-                  <li>
-                    Name and supplier are required. Category is free-text
-                    (e.g.{' '}
-                    <code class="text-xs bg-muted px-1 rounded">
-                      HAIR SERUMS / MINOXIDIL
-                    </code>
-                    ) — type a new one or match an existing.
-                  </li>
-                  <li>
-                    Set <strong>Selling price</strong>, <strong>Cost price</strong>,{' '}
-                    <strong>Reorder level</strong>, and an{' '}
-                    <strong>Initial stock</strong> if you have units on hand
-                    already.
-                  </li>
-                  <li>
-                    Save. If initial stock {'>'} 0, a <strong>PURCHASE</strong>{' '}
-                    movement is recorded automatically.
-                  </li>
-                </ol>
+            <h3 class="text-base font-medium pt-2">
+              Add a product <em class="text-xs text-muted-foreground font-normal">(admin / doctor)</em>
+            </h3>
+            <ol class="list-decimal pl-5 space-y-1">
+              <li>
+                Click <strong>New product</strong>.
+              </li>
+              <li>
+                Name and supplier are required. The <strong>Category</strong>{' '}
+                field is a dropdown — pick an existing one or type a new
+                name to create it inline.
+              </li>
+              <li>
+                Set <strong>Selling price</strong>, <strong>Cost price</strong>,{' '}
+                <strong>Reorder level</strong>, and an{' '}
+                <strong>Initial stock</strong> if you have units on hand
+                already.
+              </li>
+              <li>
+                Save. If initial stock {'>'} 0, a <strong>PURCHASE</strong>{' '}
+                movement is recorded automatically.
+              </li>
+            </ol>
 
-                <h3 class="text-base font-medium pt-2">Record stock changes</h3>
-                <p>
-                  Open a product and use <strong>Record movement</strong>:
-                </p>
-                <ul class="pl-5 list-disc space-y-1">
-                  <li>
-                    <strong>Purchase</strong> — new stock arrived (increases stock).
-                  </li>
-                  <li>
-                    <strong>Adjustment in / out</strong> — correct stock counts after
-                    physical recount.
-                  </li>
-                  <li>
-                    <strong>Damage</strong> — broken/spoiled units written off.
-                  </li>
-                  <li>
-                    <strong>Expired</strong> — write off batches past their
-                    expiry date.
-                  </li>
-                </ul>
-                <Note kind="warn">
-                  
-                      Movements are <strong>append-only</strong> — once
-                      recorded, you can't edit or delete them. If you make a
-                      typo, correct it with an{' '}
-                      <em>Adjustment</em> entry in the opposite direction.
-                      This keeps the audit trail clean.
-                    
-                </Note>
+            <h3 class="text-base font-medium pt-2">
+              Record stock changes <em class="text-xs text-muted-foreground font-normal">(all roles)</em>
+            </h3>
+            <p>
+              Open a product and use <strong>Record movement</strong>:
+            </p>
+            <ul class="pl-5 list-disc space-y-1">
+              <li>
+                <strong>Purchase</strong> — new stock arrived (increases stock).
+              </li>
+              <li>
+                <strong>Adjustment in / out</strong> — correct stock counts
+                after physical recount.
+              </li>
+              <li>
+                <strong>Damage</strong> — broken / spoiled units written off.
+              </li>
+              <li>
+                <strong>Expired</strong> — write off batches past their
+                expiry date.
+              </li>
+            </ul>
+            <Note kind="warn">
+              Movements are <strong>append-only</strong> — once recorded, you
+              can't edit or delete them. If you make a typo, correct it with
+              an <em>Adjustment</em> entry in the opposite direction. This
+              keeps the audit trail clean.
+            </Note>
 
-                <h3 class="text-base font-medium pt-2">Sell / dispense a product</h3>
-                <ol class="list-decimal pl-5 space-y-1">
-                  <li>
-                    On the inventory list, click the{' '}
-                    <ShoppingCart class="inline size-3.5 mx-0.5" /> icon on the
-                    product's row — or open the product and click <strong>Sell</strong>.
-                  </li>
-                  <li>
-                    Search and pick a patient.
-                  </li>
-                  <li>
-                    Set the quantity. Total is shown live.
-                  </li>
-                  <li>
-                    Click <strong>Sell</strong>. Stock is reduced and a SALE
-                    movement is recorded against the patient.
-                  </li>
-                </ol>
-                <Note kind="info">
-                  
-                      Trying to sell more than available shows a clear "Only N
-                      in stock" error — the sale won't go through and stock
-                      stays the same. Same protection if two people try to
-                      sell the last unit at the same time — exactly one
-                      succeeds.
-                    
-                </Note>
-              
+            <h3 class="text-base font-medium pt-2">
+              Sell / dispense a product <em class="text-xs text-muted-foreground font-normal">(all roles)</em>
+            </h3>
+            <ol class="list-decimal pl-5 space-y-1">
+              <li>
+                On the inventory list, click the{' '}
+                <ShoppingCart class="inline size-3.5 mx-0.5" /> icon on the
+                product's row — or open the product and click <strong>Sell</strong>.
+              </li>
+              <li>Search and pick a patient.</li>
+              <li>Set the quantity. Total is shown live.</li>
+              <li>
+                Click <strong>Sell</strong>. Stock is reduced and a SALE
+                movement is recorded against the patient.
+              </li>
+            </ol>
+            <Note kind="info">
+              Trying to sell more than available shows a clear "Only N in
+              stock" error — the sale won't go through and stock stays the
+              same. Same protection if two people try to sell the last unit
+              at the same time — exactly one succeeds.
+            </Note>
           </Section>
 
+          {canManageProducts.value && (
+            <Section id="categories" title="Categories">
+              <p class="flex items-start gap-2">
+                <Tags class="size-4 mt-0.5 text-muted-foreground shrink-0" />
+                <span>
+                  Categories group products in inventory ("ANTI ACNE",
+                  "HAIR SERUMS / MINOXIDIL", etc.). They're managed centrally
+                  so the same name doesn't end up with three different
+                  spellings across products.
+                </span>
+              </p>
+
+              <h3 class="text-base font-medium pt-2">Two ways to add a category</h3>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>
+                  <strong>Inline</strong>: in the product form, type a new
+                  name in the Category dropdown and click "Add …". Fastest
+                  when you're already adding a product.
+                </li>
+                <li>
+                  <strong>Categories page</strong>: open{' '}
+                  <strong>Categories</strong> from the sidebar to add,
+                  rename, or remove categories in bulk. Each row shows how
+                  many products use that category.
+                </li>
+              </ul>
+
+              <h3 class="text-base font-medium pt-2">Renaming and removing</h3>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>
+                  Click the pencil icon to rename. Press Enter to save,
+                  Escape to cancel. Renames propagate to every product
+                  using that category.
+                </li>
+                <li>
+                  The trash icon is disabled while a category is in use —
+                  the count on the right tells you how many products to
+                  reassign first. To remove a still-used category, edit
+                  those products and switch their Category to a different
+                  one.
+                </li>
+              </ul>
+
+              <Note kind="info">
+                Category management is admin / doctor only. Limited tier
+                accounts can still <em>see</em> categories on products,
+                they just can't add or rename.
+              </Note>
+            </Section>
+          )}
+
           <Section id="visits" title="Visits & prescriptions">
-            
-                <p>
-                  A <strong>visit</strong> is one clinical encounter — notes,
-                  treatment, optional prescribed products, and an optional
-                  follow-up date.
-                </p>
+            <p>
+              A <strong>visit</strong> is one clinical encounter — notes,
+              treatment, optional prescribed products, and an optional
+              follow-up date. Recording visits is admin / doctor only; all
+              roles can <em>view</em> visit history.
+            </p>
 
-                <h3 class="text-base font-medium pt-2">Record a new visit</h3>
-                <ol class="list-decimal pl-5 space-y-1">
-                  <li>
-                    Open <strong>Visits</strong> → <strong>New visit</strong>.
-                    Or, on a patient's detail page, click <strong>New visit</strong>{' '}
-                    to skip the patient-picking step.
-                  </li>
-                  <li>Pick the patient (skipped if pre-filled).</li>
-                  <li>
-                    Set a <strong>Follow-up date</strong> if the patient
-                    needs to come back — this is what populates the
-                    dashboard's Today's / Upcoming follow-ups cards.
-                  </li>
-                  <li>
-                    Write <strong>Doctor notes</strong> and{' '}
-                    <strong>Treatment details</strong>.
-                  </li>
-                  <li>
-                    Optional: add prescribed products with{' '}
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border text-xs">
-                      <Plus class="size-3" /> Add product
-                    </span>
-                    . Each line picks a product and a quantity. Subtotal
-                    shows live.
-                  </li>
-                  <li>
-                    Click <strong>Save visit</strong>.
-                  </li>
-                </ol>
-                <Note kind="info">
-                  
-                      Saving a visit with prescribed products{' '}
-                      <strong>atomically</strong> creates the visit AND
-                      dispenses each product. If any line doesn't have
-                      enough stock, the <em>entire</em> visit is rolled back —
-                      no partial state. You'll see a toast naming the failing
-                      product so you can fix the quantity and retry.
-                    
-                </Note>
+            <h3 class="text-base font-medium pt-2">
+              Record a new visit <em class="text-xs text-muted-foreground font-normal">(admin / doctor)</em>
+            </h3>
+            <ol class="list-decimal pl-5 space-y-1">
+              <li>
+                Open <strong>Visits</strong> → <strong>New visit</strong>.
+                Or, on a patient's detail page, click <strong>New visit</strong>{' '}
+                to skip the patient-picking step.
+              </li>
+              <li>Pick the patient (skipped if pre-filled).</li>
+              <li>
+                Set a <strong>Follow-up date</strong> if the patient needs
+                to come back — this is what populates the dashboard's
+                Today's / Upcoming follow-ups cards.
+              </li>
+              <li>
+                Write <strong>Doctor notes</strong> and{' '}
+                <strong>Treatment details</strong>.
+              </li>
+              <li>
+                Optional: add prescribed products with{' '}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border text-xs">
+                  <Plus class="size-3" /> Add product
+                </span>
+                . Each line picks a product and a quantity. Subtotal shows
+                live.
+              </li>
+              <li>Click <strong>Save visit</strong>.</li>
+            </ol>
+            <Note kind="info">
+              Saving a visit with prescribed products{' '}
+              <strong>atomically</strong> creates the visit AND dispenses
+              each product. If any line doesn't have enough stock, the{' '}
+              <em>entire</em> visit is rolled back — no partial state.
+              You'll see a toast naming the failing product so you can fix
+              the quantity and retry.
+            </Note>
 
-                <h3 class="text-base font-medium pt-2">Browse visit history</h3>
-                <p>
-                  The Visits page lists all visits newest-first. Click any
-                  row to see the full visit detail (notes, treatment,
-                  dispensed lines with totals). Or open a patient and scroll
-                  to their <strong>Visit history</strong> card.
-                </p>
-              
+            <h3 class="text-base font-medium pt-2">Browse visit history</h3>
+            <p>
+              The Visits page lists all visits newest-first. Click any row
+              to see the full visit detail (notes, treatment, dispensed
+              lines with totals). Or open a patient and scroll to their{' '}
+              <strong>Visit history</strong> card.
+            </p>
+          </Section>
+
+          <Section id="sales" title="Sales">
+            <p>
+              The <strong>Sales</strong> page in the sidebar shows every
+              product dispensed across visits and walk-in sells. Visible to
+              all roles.
+            </p>
+
+            <h3 class="text-base font-medium pt-2">Stats at the top</h3>
+            <p>
+              Three cards summarise <strong>Today</strong>,{' '}
+              <strong>This week</strong>, and <strong>This month</strong> —
+              count and ₹ revenue for each window. The stats always reflect
+              the whole clinic; they don't follow the filter bar.
+            </p>
+
+            <h3 class="text-base font-medium pt-2">Filtering</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>From / To</strong>: pick calendar days to narrow
+                the list. Leave blank for "no bound."
+              </li>
+              <li>
+                <strong>Patient</strong> and <strong>Product</strong>:
+                multi-select. Type to search and click to add a chip; press
+                Backspace in an empty input to pop the last chip; click the
+                × on any chip to remove it.
+              </li>
+              <li>
+                <strong>Clear</strong> in the filter-bar header resets
+                everything.
+              </li>
+            </ul>
+
+            <h3 class="text-base font-medium pt-2">The table</h3>
+            <p>
+              Newest sales first, 50 per page. Click a patient name or
+              product name to jump to its detail page. Revenue is computed
+              with the product's <em>current</em> selling price; if you
+              change a price later the historical line totals will shift to
+              the new price.
+            </p>
+          </Section>
+
+          <Section id="roles" title="Roles & permissions">
+            <p>
+              Two effective tiers. Buttons you don't have access to are
+              hidden from the UI; the database also enforces the rules so
+              there's no way around them.
+            </p>
+            <div class="overflow-x-auto rounded-md border border-border mt-1">
+              <table class="w-full text-xs">
+                <thead class="bg-muted/40 text-muted-foreground">
+                  <tr class="text-left">
+                    <th class="px-3 py-2 font-medium">Action</th>
+                    <th class="px-3 py-2 font-medium text-center">admin / doctor</th>
+                    <th class="px-3 py-2 font-medium text-center">receptionist / staff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Read everything (Patients / Inventory / Visits / Sales / Dashboard)', '✓', '✓'],
+                    ['Create / edit patients', '✓', '✓'],
+                    ['Soft-delete patients', '✓', '—'],
+                    ['Create / edit / delete products', '✓', '—'],
+                    ['Manage product categories', '✓', '—'],
+                    ['Record stock movements (Purchase / Adjustment / Damage / Expired)', '✓', '✓'],
+                    ['Sell product standalone', '✓', '✓'],
+                    ['Create visit with prescriptions', '✓', '—'],
+                  ].map((row, i) => (
+                    <tr key={i} class="border-t border-border">
+                      <td class="px-3 py-1.5">{row[0]}</td>
+                      <td class="px-3 py-1.5 text-center">{row[1]}</td>
+                      <td class="px-3 py-1.5 text-center">{row[2]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Note kind="info">
+              If you think you should have access to something but don't,
+              ask your admin to check your role.
+            </Note>
           </Section>
 
           <Section id="troubleshoot" title="Troubleshooting">
-            
-                <h3 class="text-base font-medium">"Contact admin" screen after login</h3>
-                <p>
-                  You signed in successfully but you don't have a profile
-                  attached to the clinic yet. Ask your admin to run the
-                  one-line SQL to onboard your account.
-                </p>
+            <h3 class="text-base font-medium">"Contact admin" screen after login</h3>
+            <p>
+              You signed in successfully but you don't have a profile
+              attached to the clinic yet. Ask your admin to run the one-line
+              SQL to onboard your account.
+            </p>
 
-                <h3 class="text-base font-medium pt-2">Login keeps failing</h3>
-                <ul class="list-disc pl-5 space-y-1">
-                  <li>Check the email is correct — case doesn't matter.</li>
-                  <li>
-                    If you forgot the password, ask your admin to reset it
-                    from the Supabase dashboard (no self-service yet).
-                  </li>
-                  <li>
-                    If the page hangs, refresh once with{' '}
-                    <Kbd>Cmd</Kbd>+<Kbd>R</Kbd> (Mac) or{' '}
-                    <Kbd>Ctrl</Kbd>+<Kbd>R</Kbd> (Windows).
-                  </li>
-                </ul>
+            <h3 class="text-base font-medium pt-2">Login keeps failing</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Check the email is correct — case doesn't matter.</li>
+              <li>
+                If you forgot the password, ask your admin to reset it from
+                the Supabase dashboard (no self-service yet).
+              </li>
+              <li>
+                If the page hangs, refresh once with{' '}
+                <Kbd>Cmd</Kbd>+<Kbd>R</Kbd> (Mac) or{' '}
+                <Kbd>Ctrl</Kbd>+<Kbd>R</Kbd> (Windows).
+              </li>
+            </ul>
 
-                <h3 class="text-base font-medium pt-2">Dashboard card shows "Error"</h3>
-                <p>
-                  One query failed — the other cards are still good. Refresh
-                  the page. If it stays, tell your admin which card so they
-                  can check the database.
-                </p>
+            <h3 class="text-base font-medium pt-2">Dashboard card shows "Error"</h3>
+            <p>
+              One query failed — the other cards are still good. Refresh the
+              page. If it stays, tell your admin which card so they can
+              check the database.
+            </p>
 
-                <h3 class="text-base font-medium pt-2">
-                  Patient / product search returns nothing
-                </h3>
-                <ul class="list-disc pl-5 space-y-1">
-                  <li>
-                    Search is by <strong>name</strong>, <strong>phone</strong>,
-                    or <strong>client number</strong> for patients; by{' '}
-                    <strong>name</strong>, <strong>SKU</strong>, or{' '}
-                    <strong>category</strong> for products.
-                  </li>
-                  <li>
-                    Spaces matter — try a shorter substring. Partial matches
-                    are fine ("min" finds "minoxidil").
-                  </li>
-                  <li>
-                    Removed (soft-deleted) patients/products are filtered
-                    out by design. Ask admin if you need to recover one.
-                  </li>
-                </ul>
+            <h3 class="text-base font-medium pt-2">A button I expect to see isn't there</h3>
+            <p>
+              Most likely your role doesn't include that action. Check the{' '}
+              <a href="#roles" class="underline">Roles & permissions</a>{' '}
+              table to confirm. Ask your admin if you need a different role.
+            </p>
 
-                <h3 class="text-base font-medium pt-2">Sell button is disabled</h3>
-                <p>
-                  Product stock is zero. Record a <strong>Purchase</strong>{' '}
-                  movement first, or pick a different product.
-                </p>
+            <h3 class="text-base font-medium pt-2">Patient / product search returns nothing</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                Patient search matches <strong>name</strong>,{' '}
+                <strong>phone</strong>, or <strong>client number</strong>.
+              </li>
+              <li>
+                Product search matches <strong>name</strong> or{' '}
+                <strong>SKU</strong>. Categories aren't matched by the
+                free-text search — they have their own filter.
+              </li>
+              <li>
+                Partial matches are fine ("min" finds "Minoxidil"). Try a
+                shorter substring if a longer phrase isn't matching.
+              </li>
+              <li>
+                Removed (soft-deleted) patients / products are filtered out
+                by design. Ask admin if you need to recover one.
+              </li>
+            </ul>
 
-                <h3 class="text-base font-medium pt-2">"Something went wrong"</h3>
-                <p class="flex items-start gap-2">
-                  <AlertTriangle class="size-4 mt-0.5 text-red-700 dark:text-red-400 shrink-0" />
-                  <span>
-                    A view hit an error and couldn't render. Click{' '}
-                    <strong>Try again</strong> or use the sidebar to navigate
-                    elsewhere. If you see the same error twice in a row, tell
-                    your admin and quote the message shown below it.
-                  </span>
-                </p>
-              
+            <h3 class="text-base font-medium pt-2">Sell button is disabled</h3>
+            <p>
+              Product stock is zero. Record a <strong>Purchase</strong>{' '}
+              movement first, or pick a different product.
+            </p>
+
+            <h3 class="text-base font-medium pt-2">"Something went wrong"</h3>
+            <p class="flex items-start gap-2">
+              <AlertTriangle class="size-4 mt-0.5 text-red-700 dark:text-red-400 shrink-0" />
+              <span>
+                A view hit an error and couldn't render. Click{' '}
+                <strong>Try again</strong> or use the sidebar to navigate
+                elsewhere. If you see the same error twice in a row, tell
+                your admin and quote the message shown below it.
+              </span>
+            </p>
           </Section>
 
-          <Section id="admin" title="For admins">
-            
-                <p class="flex items-start gap-2">
-                  <Lock class="size-4 mt-0.5 text-muted-foreground shrink-0" />
-                  <span>
-                    Onboarding and database operations are intentionally
-                    SQL-only for now — there's no admin UI yet. Use the
-                    Supabase <strong>SQL Editor</strong>.
-                  </span>
-                </p>
+          {canManageProducts.value && (
+            <Section id="admin" title="For admins">
+              <p class="flex items-start gap-2">
+                <Lock class="size-4 mt-0.5 text-muted-foreground shrink-0" />
+                <span>
+                  Onboarding and database operations are intentionally
+                  SQL-only for now — there's no admin UI. Use the Supabase{' '}
+                  <strong>SQL Editor</strong>.
+                </span>
+              </p>
 
-                <h3 class="text-base font-medium pt-2">Roles & permissions</h3>
-                <p>
-                  Two effective tiers — pick the right{' '}
-                  <code class="text-xs bg-muted px-1 rounded">role</code> when
-                  onboarding:
-                </p>
-                <div class="overflow-x-auto rounded-md border border-border mt-2">
-                  <table class="w-full text-xs">
-                    <thead class="bg-muted/40 text-muted-foreground">
-                      <tr class="text-left">
-                        <th class="px-3 py-2 font-medium">Action</th>
-                        <th class="px-3 py-2 font-medium text-center">admin / doctor</th>
-                        <th class="px-3 py-2 font-medium text-center">receptionist / staff</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        ['Read everything', '✓', '✓'],
-                        ['Create / edit patients', '✓', '✓'],
-                        ['Soft-delete patients', '✓', '—'],
-                        ['Create / edit / delete products', '✓', '—'],
-                        ['Record stock movements', '✓', '✓'],
-                        ['Sell product standalone', '✓', '✓'],
-                        ['Create visit with prescriptions', '✓', '—'],
-                      ].map((row, i) => (
-                        <tr key={i} class="border-t border-border">
-                          <td class="px-3 py-1.5">{row[0]}</td>
-                          <td class="px-3 py-1.5 text-center">{row[1]}</td>
-                          <td class="px-3 py-1.5 text-center">{row[2]}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p class="mt-2">
-                  Enforced at the database — a limited user opening DevTools
-                  and hitting Supabase directly still gets rejected with{' '}
-                  <code class="text-xs bg-muted px-1 rounded">42501</code>.
-                </p>
-
-                <h3 class="text-base font-medium pt-3">Onboard a new staff user</h3>
-                <ol class="list-decimal pl-5 space-y-1">
-                  <li>
-                    In Supabase Dashboard → <strong>Authentication → Users</strong>
-                    , click <strong>Add user</strong> → <strong>Create new user</strong>.
-                    Set email + password, leave "Auto Confirm User" on.
-                  </li>
-                  <li>
-                    In <strong>SQL Editor</strong>, run:
-                    <pre class="mt-2 p-3 rounded-md bg-muted text-xs overflow-x-auto"><code>{`insert into profiles (user_id, clinic_id, display_name, role)
+              <h3 class="text-base font-medium pt-2">Onboard a new staff user</h3>
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  In Supabase Dashboard → <strong>Authentication → Users</strong>
+                  , click <strong>Add user</strong> → <strong>Create new user</strong>.
+                  Set email + password, leave "Auto Confirm User" on.
+                </li>
+                <li>
+                  In <strong>SQL Editor</strong>, run:
+                  <pre class="mt-2 p-3 rounded-md bg-muted text-xs overflow-x-auto"><code>{`insert into profiles (user_id, clinic_id, display_name, role)
 values (
   (select id from auth.users where email = 'newperson@example.com'),
   (select id from clinics limit 1),
   'Dr. Asha',           -- display name; locked into audit history
   'doctor'              -- admin | doctor | receptionist | staff
 );`}</code></pre>
-                  </li>
-                  <li>
-                    Tell the user to refresh / log in.
-                  </li>
-                </ol>
-                <Note kind="warn">
-                  
-                      Without a <code>profiles</code> row the user can sign in
-                      but every read/write is blocked by RLS — they'll see{' '}
-                      "Contact admin" until you run step 2.
-                    
-                </Note>
+                </li>
+                <li>Tell the user to refresh / log in.</li>
+              </ol>
+              <Note kind="warn">
+                Without a <code>profiles</code> row the user can sign in
+                but every read/write is blocked by RLS — they'll see{' '}
+                "Contact admin" until you run step 2.
+              </Note>
 
-                <h3 class="text-base font-medium pt-2">Reset a password</h3>
-                <p>
-                  Supabase Dashboard → <strong>Authentication → Users</strong> →
-                  click the user → <strong>Send password recovery</strong>{' '}
-                  (or <strong>Reset password</strong> if you want to set one
-                  manually).
-                </p>
+              <h3 class="text-base font-medium pt-2">Reset a password</h3>
+              <p>
+                Supabase Dashboard → <strong>Authentication → Users</strong> →
+                click the user → <strong>Send password recovery</strong>{' '}
+                (or <strong>Reset password</strong> if you want to set one
+                manually).
+              </p>
 
-                <h3 class="text-base font-medium pt-2">
-                  Restore a soft-deleted patient or product
-                </h3>
-                <pre class="p-3 rounded-md bg-muted text-xs overflow-x-auto"><code>{`-- find the row
+              <h3 class="text-base font-medium pt-2">Change someone's role</h3>
+              <pre class="p-3 rounded-md bg-muted text-xs overflow-x-auto"><code>{`update profiles
+set role = 'doctor'   -- admin | doctor | receptionist | staff
+where user_id = (select id from auth.users where email = 'them@example.com');`}</code></pre>
+              <p>
+                Effective immediately — ask them to refresh to pick up the
+                new permissions in the UI.
+              </p>
+
+              <h3 class="text-base font-medium pt-2">
+                Restore a soft-deleted patient or product
+              </h3>
+              <pre class="p-3 rounded-md bg-muted text-xs overflow-x-auto"><code>{`-- find the row
 select id, name, deleted_at from patients where name ilike '%asha%';
 
 -- restore
 update patients set deleted_at = null where id = '<uuid>';`}</code></pre>
-                <p>
-                  Same pattern for <code>products</code>.
-                </p>
+              <p>
+                Same pattern for <code>products</code>.
+              </p>
 
-                <h3 class="text-base font-medium pt-2">Backups</h3>
-                <p class="flex items-start gap-2">
-                  <Wrench class="size-4 mt-0.5 text-muted-foreground shrink-0" />
-                  <span>
-                    Supabase auto-backs-up daily on paid plans. Before any
-                    bulk operation (test-data wipe, mass adjustments), take a
-                    manual snapshot:{' '}
-                    <strong>Database → Backups → Take a backup now</strong>.
-                  </span>
-                </p>
+              <h3 class="text-base font-medium pt-2">Backups</h3>
+              <p class="flex items-start gap-2">
+                <Wrench class="size-4 mt-0.5 text-muted-foreground shrink-0" />
+                <span>
+                  Supabase auto-backs-up daily on paid plans. Before any
+                  bulk operation (test-data wipe, mass adjustments), take a
+                  manual snapshot:{' '}
+                  <strong>Database → Backups → Take a backup now</strong>.
+                </span>
+              </p>
 
-                <h3 class="text-base font-medium pt-2">Migrations</h3>
-                <p>
-                  SQL migrations live in{' '}
-                  <code class="text-xs bg-muted px-1 rounded">
-                    supabase/migrations/
-                  </code>{' '}
-                  in the repo. Apply new ones in order in the SQL Editor.
-                  The schema is multi-tenant-ready (every row carries{' '}
-                  <code>clinic_id</code>), so adding a second clinic later
-                  is operational — no schema change.
-                </p>
-              
-          </Section>
+              <h3 class="text-base font-medium pt-2">Migrations</h3>
+              <p>
+                SQL migrations live in{' '}
+                <code class="text-xs bg-muted px-1 rounded">supabase/migrations/</code>{' '}
+                in the repo. Apply new ones in order in the SQL Editor. The
+                schema is multi-tenant-ready (every row carries{' '}
+                <code>clinic_id</code>), so adding a second clinic later is
+                operational — no schema change.
+              </p>
+            </Section>
+          )}
 
           <div class="border-t border-border pt-4 text-xs text-muted-foreground flex items-center gap-2">
             <Users class="size-3" />
             <span>
-              Spotted something wrong or missing in this guide? Tell the admin and
-              we'll update it.
+              Spotted something wrong or missing in this guide? Tell the
+              admin and we'll update it.
             </span>
           </div>
         </div>
