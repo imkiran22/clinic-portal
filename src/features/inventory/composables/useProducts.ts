@@ -6,16 +6,25 @@ import { movementKeys, productKeys } from '../queryKeys'
 
 export const PRODUCTS_PAGE_SIZE = 100
 
-export function useProducts(search: Ref<string>, page: Ref<number>) {
+export function useProducts(
+  search: Ref<string>,
+  page: Ref<number>,
+  categoryId?: Ref<string | null>,
+) {
   return useQuery({
     queryKey: computed(() =>
-      productKeys.list({ q: search.value, page: page.value }),
+      productKeys.list({
+        q: search.value,
+        page: page.value,
+        categoryId: categoryId?.value ?? null,
+      }),
     ),
     queryFn: () =>
       inventoryService.list(supabase, {
         search: search.value,
         page: page.value,
         pageSize: PRODUCTS_PAGE_SIZE,
+        categoryId: categoryId?.value ?? null,
       }),
     placeholderData: keepPreviousData,
   })

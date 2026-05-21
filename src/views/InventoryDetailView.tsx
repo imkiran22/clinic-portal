@@ -125,9 +125,7 @@ export default defineComponent({
                   </h1>
                   <p class="text-sm text-muted-foreground mt-0.5 inline-flex items-center gap-2 flex-wrap">
                     <span>
-                      {product.value.category
-                        ? product.value.category
-                        : 'Uncategorised'}
+                      {product.value.category?.name ?? 'Uncategorised'}
                     </span>
                     <span>·</span>
                     <span class="tabular-nums">

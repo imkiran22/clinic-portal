@@ -1,7 +1,7 @@
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
-  list: (filters: { q?: string; page?: number }) =>
+  list: (filters: { q?: string; page?: number; categoryId?: string | null }) =>
     [...productKeys.lists(), filters] as const,
   details: () => [...productKeys.all, 'detail'] as const,
   detail: (id: string) => [...productKeys.details(), id] as const,

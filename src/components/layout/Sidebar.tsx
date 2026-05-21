@@ -1,14 +1,29 @@
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { RouterLink } from 'vue-router'
-import { LayoutDashboard, Users, Package, ClipboardList, CircleHelp, X } from 'lucide-vue-next'
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  ClipboardList,
+  CircleHelp,
+  Tags,
+  X,
+} from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
+import { useCan } from '@/features/auth/composables/useCan'
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard }
+type NavItem = {
+  to: string
+  label: string
+  icon: typeof LayoutDashboard
+  privileged?: boolean
+}
 
 const items: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/patients', label: 'Patients', icon: Users },
   { to: '/inventory', label: 'Inventory', icon: Package },
+  { to: '/categories', label: 'Categories', icon: Tags, privileged: true },
   { to: '/visits', label: 'Visits', icon: ClipboardList },
   { to: '/help', label: 'Help', icon: CircleHelp },
 ]
@@ -20,6 +35,10 @@ export default defineComponent({
     onClose: { type: Function, default: () => {} },
   },
   setup(props) {
+    const { canManageProducts } = useCan()
+    const visibleItems = computed(() =>
+      items.filter((it) => !it.privileged || canManageProducts.value),
+    )
     return () => (
       <>
         {props.open && (
@@ -46,7 +65,7 @@ export default defineComponent({
             </button>
           </div>
           <nav class="flex flex-col gap-1">
-            {items.map((item) => (
+            {visibleItems.value.map((item) => (
               <RouterLink
                 key={item.to}
                 to={item.to}

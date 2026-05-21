@@ -18,11 +18,14 @@ export type Product = {
   selling_price: number
   current_stock: number
   reorder_level: number
-  category: string | null
+  category_id: string | null
   notes: string | null
   deleted_at: string | null
   created_at: string
   updated_at: string
+  // Embedded via select join — resolves the category's display name when
+  // listing or fetching a product.
+  category?: { id: string; name: string } | null
 }
 
 export type ProductInput = {
@@ -34,7 +37,7 @@ export type ProductInput = {
   cost_price: number
   selling_price: number
   reorder_level: number
-  category: string | null
+  category_id: string | null
   notes: string | null
 }
 

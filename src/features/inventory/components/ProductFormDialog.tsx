@@ -26,6 +26,9 @@ export default defineComponent({
     const initialValues = computed<ProductFormValues>(() =>
       props.product ? fromProduct(props.product) : emptyProductForm,
     )
+    const initialCategoryId = computed<string | null>(
+      () => props.product?.category_id ?? null,
+    )
 
     const createMut = useCreateProduct()
     const updateMut = useUpdateProduct()
@@ -33,13 +36,16 @@ export default defineComponent({
       () => createMut.isPending.value || updateMut.isPending.value,
     )
 
-    const onSubmit = async (values: ProductFormValues) => {
+    const onSubmit = async (
+      values: ProductFormValues,
+      categoryId: string | null,
+    ) => {
       try {
         if (props.product) {
-          const input = toProductUpdateInput(values)
+          const input = toProductUpdateInput(values, categoryId)
           await updateMut.mutateAsync({ id: props.product.id, input })
         } else {
-          const input = toProductCreateInput(values)
+          const input = toProductCreateInput(values, categoryId)
           await createMut.mutateAsync(input)
         }
         emit('saved')
@@ -58,6 +64,7 @@ export default defineComponent({
         <ProductForm
           key={props.product?.id ?? 'new'}
           initialValues={initialValues.value}
+          initialCategoryId={initialCategoryId.value}
           isEdit={isEdit.value}
           submitting={submitting.value}
           submitLabel={isEdit.value ? 'Save changes' : 'Create product'}

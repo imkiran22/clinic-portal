@@ -65,7 +65,7 @@ export default defineComponent({
               >
                 <td class="px-4 py-2 font-medium">{p.name}</td>
                 <td class="px-4 py-2 text-muted-foreground">
-                  {p.category ?? '—'}
+                  {p.category?.name ?? '—'}
                 </td>
                 <td class="px-4 py-2 text-muted-foreground">
                   {p.supplier_name}

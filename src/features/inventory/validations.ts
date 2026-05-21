@@ -2,6 +2,9 @@ import { z } from 'zod'
 import type { MovementInput, MovementType, Product } from './types'
 
 // ---------- Product form ----------
+// category_id stays out of the Zod schema because the CategoryPicker
+// component manages it directly as a sibling reactive ref — VeeValidate
+// validation isn't useful for a picker that handles its own empty state.
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   sku: z.string(),
@@ -15,7 +18,6 @@ export const productFormSchema = z.object({
     .string()
     .regex(/^$|^\d+(\.\d{1,2})?$/, 'Numbers only (up to 2 decimals)'),
   reorder_level: z.string().regex(/^$|^\d+$/, 'Whole numbers only'),
-  category: z.string(),
   notes: z.string(),
   initial_stock: z.string().regex(/^$|^\d+$/, 'Whole numbers only'),
 })
@@ -31,7 +33,6 @@ export const emptyProductForm: ProductFormValues = {
   cost_price: '',
   selling_price: '',
   reorder_level: '',
-  category: '',
   notes: '',
   initial_stock: '',
 }
@@ -41,7 +42,10 @@ function trimOrNull(s: string): string | null {
   return t === '' ? null : t
 }
 
-export function toProductCreateInput(values: ProductFormValues) {
+export function toProductCreateInput(
+  values: ProductFormValues,
+  categoryId: string | null,
+) {
   return {
     name: values.name.trim(),
     sku: trimOrNull(values.sku),
@@ -51,14 +55,20 @@ export function toProductCreateInput(values: ProductFormValues) {
     cost_price: values.cost_price === '' ? 0 : Number(values.cost_price),
     selling_price: values.selling_price === '' ? 0 : Number(values.selling_price),
     reorder_level: values.reorder_level === '' ? 0 : Number(values.reorder_level),
-    category: trimOrNull(values.category),
+    category_id: categoryId,
     notes: trimOrNull(values.notes),
     initial_stock: values.initial_stock === '' ? 0 : Number(values.initial_stock),
   }
 }
 
-export function toProductUpdateInput(values: ProductFormValues) {
-  const { initial_stock: _ignored, ...rest } = toProductCreateInput(values)
+export function toProductUpdateInput(
+  values: ProductFormValues,
+  categoryId: string | null,
+) {
+  const { initial_stock: _ignored, ...rest } = toProductCreateInput(
+    values,
+    categoryId,
+  )
   return rest
 }
 
@@ -72,7 +82,6 @@ export function fromProduct(p: Product): ProductFormValues {
     cost_price: p.cost_price === null ? '' : String(p.cost_price),
     selling_price: p.selling_price === null ? '' : String(p.selling_price),
     reorder_level: p.reorder_level === null ? '' : String(p.reorder_level),
-    category: p.category ?? '',
     notes: p.notes ?? '',
     initial_stock: '',
   }

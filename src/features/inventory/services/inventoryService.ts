@@ -13,36 +13,51 @@ export type ListResult = { rows: Product[]; total: number }
 export const inventoryService = {
   async list(
     sb: AppSupabaseClient,
-    args: { search?: string; page: number; pageSize: number },
+    args: {
+      search?: string
+      page: number
+      pageSize: number
+      categoryId?: string | null
+    },
   ): Promise<ListResult> {
-    const { search, page, pageSize } = args
+    const { search, page, pageSize, categoryId } = args
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
 
     let q = sb
       .from('products_active')
-      .select('*', { count: 'exact' })
+      .select('*, category:product_categories(id, name)', { count: 'exact' })
       .order('name')
       .range(from, to)
 
     const s = search?.trim()
     if (s) {
-      q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%,category.ilike.%${s}%`)
+      // Free-text search is now name + SKU only — categories get their own
+      // explicit filter via categoryId, since PostgREST can't OR across a
+      // joined column cleanly.
+      q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%`)
+    }
+
+    if (categoryId) {
+      q = q.eq('category_id', categoryId)
     }
 
     const { data, error, count } = await q
     if (error) throw error
-    return { rows: (data ?? []) as Product[], total: count ?? 0 }
+    return {
+      rows: (data ?? []) as unknown as Product[],
+      total: count ?? 0,
+    }
   },
 
   async get(sb: AppSupabaseClient, id: string): Promise<Product | null> {
     const { data, error } = await sb
       .from('products_active')
-      .select('*')
+      .select('*, category:product_categories(id, name)')
       .eq('id', id)
       .maybeSingle()
     if (error) throw error
-    return (data as Product | null) ?? null
+    return (data as unknown as Product | null) ?? null
   },
 
   async createWithStock(
@@ -58,7 +73,7 @@ export const inventoryService = {
       p_cost_price: input.cost_price,
       p_selling_price: input.selling_price,
       p_reorder_level: input.reorder_level,
-      p_category: input.category,
+      p_category_id: input.category_id,
       p_notes: input.notes,
       p_initial_stock: input.initial_stock,
     })
