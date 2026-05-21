@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CircleHelp,
   Tags,
+  ShoppingCart,
   X,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
@@ -25,6 +26,7 @@ const items: NavItem[] = [
   { to: '/inventory', label: 'Inventory', icon: Package },
   { to: '/categories', label: 'Categories', icon: Tags, privileged: true },
   { to: '/visits', label: 'Visits', icon: ClipboardList },
+  { to: '/sales', label: 'Sales', icon: ShoppingCart },
   { to: '/help', label: 'Help', icon: CircleHelp },
 ]
 

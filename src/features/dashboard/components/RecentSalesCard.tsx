@@ -33,8 +33,8 @@ export default defineComponent({
           loading={isLoading.value}
           errorMessage={(error.value as { message?: string } | null)?.message ?? (error.value ? "Failed to load" : "")}
           accent="default"
-          viewAllLabel="Open inventory"
-          onViewAll={() => router.push({ name: 'inventory' })}
+          viewAllLabel="View all sales"
+          onViewAll={() => router.push({ name: 'sales' })}
         >
           {{
             empty: () => 'No sales yet.',
