@@ -15,12 +15,14 @@ export function useCan() {
   const { profile } = useAuth()
 
   const role = computed(() => profile.value?.role ?? null)
+  const isAdmin = computed(() => role.value === 'admin')
   const isPrivileged = computed(
     () => role.value === 'admin' || role.value === 'doctor',
   )
 
   return {
     role,
+    isAdmin,
     isPrivileged,
     // Patients: limited can create / edit. Soft-delete is privileged only.
     canDeletePatient: isPrivileged,

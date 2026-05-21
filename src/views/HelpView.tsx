@@ -73,7 +73,12 @@ const Kbd = defineComponent({
   },
 })
 
-type TocEntry = { id: string; label: string; privileged?: boolean }
+type TocEntry = {
+  id: string
+  label: string
+  privileged?: boolean // admin | doctor
+  adminOnly?: boolean // admin only
+}
 
 const ALL_SECTIONS: TocEntry[] = [
   { id: 'getting-started', label: 'Getting started' },
@@ -85,18 +90,20 @@ const ALL_SECTIONS: TocEntry[] = [
   { id: 'sales', label: 'Sales' },
   { id: 'roles', label: 'Roles & permissions' },
   { id: 'troubleshoot', label: 'Troubleshooting' },
-  { id: 'admin', label: 'For admins', privileged: true },
+  { id: 'admin', label: 'For admins', adminOnly: true },
 ]
 
 export default defineComponent({
   name: 'HelpView',
   setup() {
-    const { canManageProducts } = useCan()
+    const { canManageProducts, isAdmin } = useCan()
 
     const visibleSections = computed(() =>
-      ALL_SECTIONS.filter(
-        (s) => !s.privileged || canManageProducts.value,
-      ),
+      ALL_SECTIONS.filter((s) => {
+        if (s.adminOnly) return isAdmin.value
+        if (s.privileged) return canManageProducts.value
+        return true
+      }),
     )
 
     return () => (
@@ -629,7 +636,7 @@ export default defineComponent({
             </p>
           </Section>
 
-          {canManageProducts.value && (
+          {isAdmin.value && (
             <Section id="admin" title="For admins">
               <p class="flex items-start gap-2">
                 <Lock class="size-4 mt-0.5 text-muted-foreground shrink-0" />
