@@ -1,6 +1,6 @@
 import { computed, defineComponent, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, Check, X, Search } from 'lucide-vue-next'
 import {
   useCategories,
   useCreateCategory,
@@ -34,7 +34,13 @@ export default defineComponent({
     const updateMut = useUpdateCategory()
     const deleteMut = useDeleteCategory()
 
-    const rows = computed(() => data.value ?? [])
+    const allRows = computed(() => data.value ?? [])
+    const searchInput = ref('')
+    const rows = computed(() => {
+      const q = searchInput.value.trim().toLowerCase()
+      if (!q) return allRows.value
+      return allRows.value.filter((c) => c.name.toLowerCase().includes(q))
+    })
 
     const newName = ref('')
     const editingId = ref<string | null>(null)
@@ -141,6 +147,19 @@ export default defineComponent({
           </div>
         </div>
 
+        <div class="relative max-w-md">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <input
+            type="search"
+            placeholder="Search categories"
+            value={searchInput.value}
+            onInput={(e: Event) =>
+              (searchInput.value = (e.target as HTMLInputElement).value)
+            }
+            class="w-full pl-9 pr-3 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+
         {error.value && (
           <div class="rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
             {(error.value as { message?: string })?.message ??
@@ -158,7 +177,9 @@ export default defineComponent({
 
         {!isLoading.value && !error.value && rows.value.length === 0 && (
           <div class="rounded-md border border-dashed border-border px-6 py-12 text-center text-muted-foreground">
-            No categories yet. Add one above.
+            {searchInput.value.trim()
+              ? `No categories match "${searchInput.value.trim()}".`
+              : 'No categories yet. Add one above.'}
           </div>
         )}
 
