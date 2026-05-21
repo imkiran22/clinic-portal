@@ -186,7 +186,7 @@ export default defineComponent({
               <div class="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {renderField('SKU', product.value.sku)}
                 {renderField('Batch', product.value.batch_number)}
-                {renderField('Supplier', product.value.supplier_name)}
+                {renderField('Supplier', product.value.supplier?.name)}
                 {renderField('Cost price', fmtMoney(product.value.cost_price))}
                 {renderField(
                   'Selling price',

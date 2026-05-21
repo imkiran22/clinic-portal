@@ -2,15 +2,14 @@ import { z } from 'zod'
 import type { MovementInput, MovementType, Product } from './types'
 
 // ---------- Product form ----------
-// category_id stays out of the Zod schema because the CategoryPicker
-// component manages it directly as a sibling reactive ref — VeeValidate
-// validation isn't useful for a picker that handles its own empty state.
+// category_id and supplier_id stay out of the Zod schema because their
+// pickers manage their own value lifecycle as sibling reactive refs.
+// VeeValidate validation isn't useful for the picker shape.
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   sku: z.string(),
   batch_number: z.string(),
   expiry_date: z.string(), // 'YYYY-MM-DD' from <input type="date"> or ''
-  supplier_name: z.string().min(1, 'Supplier is required'),
   cost_price: z
     .string()
     .regex(/^$|^\d+(\.\d{1,2})?$/, 'Numbers only (up to 2 decimals)'),
@@ -29,7 +28,6 @@ export const emptyProductForm: ProductFormValues = {
   sku: '',
   batch_number: '',
   expiry_date: '',
-  supplier_name: '',
   cost_price: '',
   selling_price: '',
   reorder_level: '',
@@ -45,13 +43,14 @@ function trimOrNull(s: string): string | null {
 export function toProductCreateInput(
   values: ProductFormValues,
   categoryId: string | null,
+  supplierId: string,
 ) {
   return {
     name: values.name.trim(),
     sku: trimOrNull(values.sku),
     batch_number: trimOrNull(values.batch_number),
     expiry_date: values.expiry_date || null,
-    supplier_name: values.supplier_name.trim(),
+    supplier_id: supplierId,
     cost_price: values.cost_price === '' ? 0 : Number(values.cost_price),
     selling_price: values.selling_price === '' ? 0 : Number(values.selling_price),
     reorder_level: values.reorder_level === '' ? 0 : Number(values.reorder_level),
@@ -64,10 +63,12 @@ export function toProductCreateInput(
 export function toProductUpdateInput(
   values: ProductFormValues,
   categoryId: string | null,
+  supplierId: string,
 ) {
   const { initial_stock: _ignored, ...rest } = toProductCreateInput(
     values,
     categoryId,
+    supplierId,
   )
   return rest
 }
@@ -78,7 +79,6 @@ export function fromProduct(p: Product): ProductFormValues {
     sku: p.sku ?? '',
     batch_number: p.batch_number ?? '',
     expiry_date: p.expiry_date ?? '',
-    supplier_name: p.supplier_name,
     cost_price: p.cost_price === null ? '' : String(p.cost_price),
     selling_price: p.selling_price === null ? '' : String(p.selling_price),
     reorder_level: p.reorder_level === null ? '' : String(p.reorder_level),

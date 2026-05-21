@@ -5,6 +5,7 @@ import {
   ClipboardList,
   ShoppingCart,
   Tags,
+  Truck,
   Plus,
   AlertTriangle,
   Sun,
@@ -86,6 +87,7 @@ const ALL_SECTIONS: TocEntry[] = [
   { id: 'patients', label: 'Patients' },
   { id: 'inventory', label: 'Inventory' },
   { id: 'categories', label: 'Categories', privileged: true },
+  { id: 'suppliers', label: 'Suppliers', privileged: true },
   { id: 'visits', label: 'Visits & prescriptions' },
   { id: 'sales', label: 'Sales' },
   { id: 'roles', label: 'Roles & permissions' },
@@ -302,9 +304,10 @@ export default defineComponent({
                 Click <strong>New product</strong>.
               </li>
               <li>
-                Name and supplier are required. The <strong>Category</strong>{' '}
-                field is a dropdown — pick an existing one or type a new
-                name to create it inline.
+                <strong>Name</strong> and <strong>Supplier</strong> are
+                required. Both <strong>Category</strong> and{' '}
+                <strong>Supplier</strong> are dropdowns — pick an existing
+                entry or type a new name to create it inline.
               </li>
               <li>
                 Set <strong>Selling price</strong>, <strong>Cost price</strong>,{' '}
@@ -504,6 +507,44 @@ export default defineComponent({
             </Section>
           )}
 
+          {canManageProducts.value && (
+            <Section id="suppliers" title="Suppliers">
+              <p class="flex items-start gap-2">
+                <Truck class="size-4 mt-0.5 text-muted-foreground shrink-0" />
+                <span>
+                  Suppliers are the vendors you buy products from
+                  ("Cipla", "Ethicare", "Arka Vital", etc.). Every product
+                  must have one. Managed like categories — pick from the
+                  dropdown in the product form or type a new name to create
+                  inline; use the <strong>Suppliers</strong> page from the
+                  sidebar to rename or remove entries in bulk.
+                </span>
+              </p>
+
+              <h3 class="text-base font-medium pt-2">Renaming and removing</h3>
+              <ul class="list-disc pl-5 space-y-1">
+                <li>
+                  Pencil icon to rename. Enter saves, Escape cancels.
+                  Renames propagate to every product using that supplier.
+                </li>
+                <li>
+                  The trash icon is disabled while a supplier is in use —
+                  the count on the right tells you how many products to
+                  reassign first. Unlike categories, supplier is a{' '}
+                  <strong>required</strong> field, so you have to move
+                  those products to a different supplier (you can't just
+                  let them become un-assigned).
+                </li>
+              </ul>
+
+              <Note kind="info">
+                The database also blocks deletion of an in-use supplier
+                with a "referenced elsewhere" error — the trash icon's
+                disabled state matches that rule.
+              </Note>
+            </Section>
+          )}
+
           <Section id="visits" title="Visits & prescriptions">
             <p>
               A <strong>visit</strong> is one clinical encounter — notes,
@@ -624,6 +665,7 @@ export default defineComponent({
                     ['Soft-delete patients', '✓', '—'],
                     ['Create / edit / delete products', '✓', '—'],
                     ['Manage product categories', '✓', '—'],
+                    ['Manage product suppliers', '✓', '—'],
                     ['Record stock movements (Purchase / Adjustment / Damage / Expired)', '✓', '✓'],
                     ['Sell product standalone', '✓', '✓'],
                     ['Create visit with prescriptions', '✓', '—'],

@@ -68,7 +68,7 @@ export default defineComponent({
                   {p.category?.name ?? '—'}
                 </td>
                 <td class="px-4 py-2 text-muted-foreground">
-                  {p.supplier_name}
+                  {p.supplier?.name ?? '—'}
                 </td>
                 <td class="px-4 py-2 text-muted-foreground tabular-nums">
                   {p.sku ?? '—'}

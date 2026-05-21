@@ -26,7 +26,10 @@ export const inventoryService = {
 
     let q = sb
       .from('products_active')
-      .select('*, category:product_categories(id, name)', { count: 'exact' })
+      .select(
+        '*, category:product_categories(id, name), supplier:product_suppliers(id, name)',
+        { count: 'exact' },
+      )
       .order('name')
       .range(from, to)
 
@@ -53,7 +56,9 @@ export const inventoryService = {
   async get(sb: AppSupabaseClient, id: string): Promise<Product | null> {
     const { data, error } = await sb
       .from('products_active')
-      .select('*, category:product_categories(id, name)')
+      .select(
+        '*, category:product_categories(id, name), supplier:product_suppliers(id, name)',
+      )
       .eq('id', id)
       .maybeSingle()
     if (error) throw error
@@ -69,7 +74,7 @@ export const inventoryService = {
       p_sku: input.sku,
       p_batch_number: input.batch_number,
       p_expiry_date: input.expiry_date,
-      p_supplier_name: input.supplier_name,
+      p_supplier_id: input.supplier_id,
       p_cost_price: input.cost_price,
       p_selling_price: input.selling_price,
       p_reorder_level: input.reorder_level,
