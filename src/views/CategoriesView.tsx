@@ -95,7 +95,7 @@ export default defineComponent({
     }
 
     return () => (
-      <div class="space-y-4 max-w-3xl">
+      <div class="space-y-4">
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">Product categories</h1>
           <p class="text-sm text-muted-foreground mt-1">

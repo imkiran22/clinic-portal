@@ -1,8 +1,8 @@
 import { computed, defineComponent, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
-import PatientPicker from '@/features/patients/components/PatientPicker'
-import ProductPicker from '@/features/inventory/components/ProductPicker'
+import MultiPatientPicker from '@/features/patients/components/MultiPatientPicker'
+import MultiProductPicker from '@/features/inventory/components/MultiProductPicker'
 import Pagination from '@/components/shared/Pagination'
 import {
   useSales,
@@ -35,10 +35,10 @@ export default defineComponent({
   setup() {
     const router = useRouter()
 
-    // Filter pickers hold their full objects so the UI can render the
-    // selected name / number; the service only needs the ids.
-    const patient = ref<Patient | null>(null)
-    const product = ref<Product | null>(null)
+    // Filter pickers hold the full objects so chip labels render with
+    // names / client numbers; the service only needs the ids.
+    const patients = ref<Patient[]>([])
+    const products = ref<Product[]>([])
     const dateFrom = ref('')
     const dateTo = ref('')
     const page = ref(1)
@@ -46,8 +46,8 @@ export default defineComponent({
     const filter = computed<SalesFilter>(() => ({
       dateFrom: dateFrom.value || null,
       dateTo: dateTo.value || null,
-      patientId: patient.value?.id ?? null,
-      productId: product.value?.id ?? null,
+      patientIds: patients.value.map((p) => p.id),
+      productIds: products.value.map((p) => p.id),
     }))
 
     // Reset to page 1 whenever the filter changes — otherwise users land
@@ -70,14 +70,14 @@ export default defineComponent({
         !!(
           filter.value.dateFrom ||
           filter.value.dateTo ||
-          filter.value.patientId ||
-          filter.value.productId
+          filter.value.patientIds.length ||
+          filter.value.productIds.length
         ),
     )
 
     const clearFilters = () => {
-      patient.value = null
-      product.value = null
+      patients.value = []
+      products.value = []
       dateFrom.value = ''
       dateTo.value = ''
     }
@@ -127,78 +127,57 @@ export default defineComponent({
             })}
           </div>
 
-          {/* Filter bar */}
+          {/* Filter bar — dates take only as much width as they need;
+              pickers grow to fill the rest. "Clear" sits in the header
+              row so the body stays tight. */}
           <div class="rounded-md border border-border bg-card p-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div>
-                <label class="text-xs uppercase tracking-wide text-muted-foreground" for="sales-from">
-                  From
-                </label>
-                <input
-                  id="sales-from"
-                  type="date"
-                  value={dateFrom.value}
-                  onInput={(e: Event) =>
-                    (dateFrom.value = (e.target as HTMLInputElement).value)
-                  }
-                  class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-xs uppercase tracking-wide text-muted-foreground">
+                Filters
               </div>
-              <div>
-                <label class="text-xs uppercase tracking-wide text-muted-foreground" for="sales-to">
-                  To
-                </label>
-                <input
-                  id="sales-to"
-                  type="date"
-                  value={dateTo.value}
-                  onInput={(e: Event) =>
-                    (dateTo.value = (e.target as HTMLInputElement).value)
-                  }
-                  class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div>
-                <label class="text-xs uppercase tracking-wide text-muted-foreground">
-                  Patient
-                </label>
-                <div class="mt-1">
-                  <PatientPicker
-                    modelValue={patient.value}
-                    onUpdate:modelValue={(p: Patient | null) =>
-                      (patient.value = p)
-                    }
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="text-xs uppercase tracking-wide text-muted-foreground">
-                  Product
-                </label>
-                <div class="mt-1">
-                  <ProductPicker
-                    modelValue={product.value}
-                    onUpdate:modelValue={(p: Product | null) =>
-                      (product.value = p)
-                    }
-                    inStockOnly={false}
-                    placeholder="Filter by product"
-                  />
-                </div>
-              </div>
-            </div>
-            {hasAnyFilter.value && (
-              <div class="flex justify-end pt-3">
+              {hasAnyFilter.value && (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                 >
                   <X class="size-3" />
-                  <span>Clear filters</span>
+                  <span>Clear</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-[160px_160px_1fr_1fr] gap-3 items-start">
+              <input
+                type="date"
+                aria-label="From date"
+                value={dateFrom.value}
+                onInput={(e: Event) =>
+                  (dateFrom.value = (e.target as HTMLInputElement).value)
+                }
+                class="h-[38px] w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <input
+                type="date"
+                aria-label="To date"
+                value={dateTo.value}
+                onInput={(e: Event) =>
+                  (dateTo.value = (e.target as HTMLInputElement).value)
+                }
+                class="h-[38px] w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <MultiPatientPicker
+                modelValue={patients.value}
+                onUpdate:modelValue={(ps: Patient[]) =>
+                  (patients.value = ps)
+                }
+              />
+              <MultiProductPicker
+                modelValue={products.value}
+                onUpdate:modelValue={(ps: Product[]) =>
+                  (products.value = ps)
+                }
+              />
+            </div>
           </div>
 
           {isError.value && (

@@ -19,8 +19,9 @@ export type SalesFilter = {
   // YYYY-MM-DD (local calendar day). Empty / null = no bound.
   dateFrom: string | null
   dateTo: string | null
-  patientId: string | null
-  productId: string | null
+  // Multi-select. Empty array = no filter (any patient / any product).
+  patientIds: string[]
+  productIds: string[]
 }
 
 export type SalesBucketStats = {

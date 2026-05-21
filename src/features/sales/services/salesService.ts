@@ -66,11 +66,11 @@ export const salesService = {
     if (filter.dateTo) {
       q = q.lte('created_at', endOfLocalDayIso(filter.dateTo))
     }
-    if (filter.patientId) {
-      q = q.eq('patient_id', filter.patientId)
+    if (filter.patientIds.length) {
+      q = q.in('patient_id', filter.patientIds)
     }
-    if (filter.productId) {
-      q = q.eq('product_id', filter.productId)
+    if (filter.productIds.length) {
+      q = q.in('product_id', filter.productIds)
     }
 
     const { data, error, count } = await q
