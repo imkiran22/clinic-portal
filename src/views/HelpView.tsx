@@ -322,30 +322,112 @@ export default defineComponent({
               Record stock changes <em class="text-xs text-muted-foreground font-normal">(all roles)</em>
             </h3>
             <p>
-              Open a product and use <strong>Record movement</strong>:
+              Every change in inventory is logged as a <strong>movement</strong>{' '}
+              — a single dated entry that says "X units of product Y were
+              added or removed because of Z." All movements together = the
+              full stock history. The "Current stock" number on a product
+              is computed from these movements; you never edit it directly.
             </p>
-            <ul class="pl-5 list-disc space-y-1">
+            <p>
+              Open a product → click <strong>Record movement</strong> →
+              pick the right type from the dropdown. Always enter the
+              quantity as a <strong>positive number</strong>; the portal
+              knows whether to add or subtract based on the type.
+            </p>
+
+            <div class="overflow-x-auto rounded-md border border-border mt-1">
+              <table class="w-full text-xs">
+                <thead class="bg-muted/40 text-muted-foreground">
+                  <tr class="text-left">
+                    <th class="px-3 py-2 font-medium">Type</th>
+                    <th class="px-3 py-2 font-medium">Direction</th>
+                    <th class="px-3 py-2 font-medium">Use it when…</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-border">
+                    <td class="px-3 py-2 font-medium">Purchase</td>
+                    <td class="px-3 py-2 text-emerald-700 dark:text-emerald-400">+ adds stock</td>
+                    <td class="px-3 py-2">New stock arrived from a supplier.</td>
+                  </tr>
+                  <tr class="border-t border-border">
+                    <td class="px-3 py-2 font-medium">Adjustment in</td>
+                    <td class="px-3 py-2 text-emerald-700 dark:text-emerald-400">+ adds stock</td>
+                    <td class="px-3 py-2">Physical count is higher than the system. Use this to correct upward.</td>
+                  </tr>
+                  <tr class="border-t border-border">
+                    <td class="px-3 py-2 font-medium">Adjustment out</td>
+                    <td class="px-3 py-2 text-amber-700 dark:text-amber-400">− removes stock</td>
+                    <td class="px-3 py-2">Physical count is lower than the system. Use this to correct downward (unit went missing, given as sample, etc.).</td>
+                  </tr>
+                  <tr class="border-t border-border">
+                    <td class="px-3 py-2 font-medium">Damage</td>
+                    <td class="px-3 py-2 text-amber-700 dark:text-amber-400">− removes stock</td>
+                    <td class="px-3 py-2">A unit was broken, spilled, or otherwise made unusable.</td>
+                  </tr>
+                  <tr class="border-t border-border">
+                    <td class="px-3 py-2 font-medium">Expired</td>
+                    <td class="px-3 py-2 text-amber-700 dark:text-amber-400">− removes stock</td>
+                    <td class="px-3 py-2">A unit crossed its expiry date and is being written off.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4 class="text-sm font-medium pt-2">What happens after you click "Record"</h4>
+            <ol class="list-decimal pl-5 space-y-1">
               <li>
-                <strong>Purchase</strong> — new stock arrived (increases stock).
+                A new row appears in the product's{' '}
+                <strong>Movement history</strong> at the bottom of the
+                page.
               </li>
               <li>
-                <strong>Adjustment in / out</strong> — correct stock counts
-                after physical recount.
+                <strong>Current stock</strong> updates immediately — up
+                for Purchase / Adjustment in, down for the others.
               </li>
               <li>
-                <strong>Damage</strong> — broken / spoiled units written off.
+                The entry is stamped with <strong>your name</strong> and
+                the exact time, so the audit trail shows who recorded
+                what.
+              </li>
+            </ol>
+
+            <Note kind="warn">
+              Movements can't be edited or deleted — the inventory ledger
+              has to be tamper-proof for trust. If you make a mistake,
+              record an <strong>Adjustment</strong> in the opposite
+              direction to cancel it out, and use the <em>Remarks</em>{' '}
+              field to explain (e.g. "correcting earlier 50-unit purchase
+              entry — only 30 arrived").
+            </Note>
+
+            <h4 class="text-sm font-medium pt-2">Quick scenarios</h4>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>5 boxes of Dershine arrived from the supplier</strong>
+                {' '}→ Purchase → 5.
               </li>
               <li>
-                <strong>Expired</strong> — write off batches past their
-                expiry date.
+                <strong>Daily count: shelf has 8 units, system says 10</strong>
+                {' '}→ Adjustment out → 2 → Remark: "Daily count correction."
+              </li>
+              <li>
+                <strong>A bottle of Acless fell and broke</strong>
+                {' '}→ Damage → 1 → Remark: "Bottle dropped, contents lost."
+              </li>
+              <li>
+                <strong>Three sachets past expiry</strong>
+                {' '}→ Expired → 3 → Remark: "Batch 24A02 expired."
+              </li>
+              <li>
+                <strong>Patient buying a product</strong> → ❌ Do{' '}
+                <em>not</em> record a movement. Use the cart icon{' '}
+                <ShoppingCart class="inline size-3.5 mx-0.5" /> or{' '}
+                <strong>Sell</strong> button instead — sales need to be
+                linked to a patient, and the dedicated Sell flow handles
+                that.
               </li>
             </ul>
-            <Note kind="warn">
-              Movements are <strong>append-only</strong> — once recorded, you
-              can't edit or delete them. If you make a typo, correct it with
-              an <em>Adjustment</em> entry in the opposite direction. This
-              keeps the audit trail clean.
-            </Note>
 
             <h3 class="text-base font-medium pt-2">
               Sell / dispense a product <em class="text-xs text-muted-foreground font-normal">(all roles)</em>
