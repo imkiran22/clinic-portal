@@ -504,7 +504,47 @@ export default defineComponent({
                   </span>
                 </p>
 
-                <h3 class="text-base font-medium pt-2">Onboard a new staff user</h3>
+                <h3 class="text-base font-medium pt-2">Roles & permissions</h3>
+                <p>
+                  Two effective tiers — pick the right{' '}
+                  <code class="text-xs bg-muted px-1 rounded">role</code> when
+                  onboarding:
+                </p>
+                <div class="overflow-x-auto rounded-md border border-border mt-2">
+                  <table class="w-full text-xs">
+                    <thead class="bg-muted/40 text-muted-foreground">
+                      <tr class="text-left">
+                        <th class="px-3 py-2 font-medium">Action</th>
+                        <th class="px-3 py-2 font-medium text-center">admin / doctor</th>
+                        <th class="px-3 py-2 font-medium text-center">receptionist / staff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ['Read everything', '✓', '✓'],
+                        ['Create / edit patients', '✓', '✓'],
+                        ['Soft-delete patients', '✓', '—'],
+                        ['Create / edit / delete products', '✓', '—'],
+                        ['Record stock movements', '✓', '✓'],
+                        ['Sell product standalone', '✓', '✓'],
+                        ['Create visit with prescriptions', '✓', '—'],
+                      ].map((row, i) => (
+                        <tr key={i} class="border-t border-border">
+                          <td class="px-3 py-1.5">{row[0]}</td>
+                          <td class="px-3 py-1.5 text-center">{row[1]}</td>
+                          <td class="px-3 py-1.5 text-center">{row[2]}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p class="mt-2">
+                  Enforced at the database — a limited user opening DevTools
+                  and hitting Supabase directly still gets rejected with{' '}
+                  <code class="text-xs bg-muted px-1 rounded">42501</code>.
+                </p>
+
+                <h3 class="text-base font-medium pt-3">Onboard a new staff user</h3>
                 <ol class="list-decimal pl-5 space-y-1">
                   <li>
                     In Supabase Dashboard → <strong>Authentication → Users</strong>

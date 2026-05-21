@@ -1,4 +1,4 @@
-import { defineComponent, onMounted, reactive, ref } from 'vue'
+import { defineComponent, onMounted, reactive, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 import PatientPicker from '@/features/patients/components/PatientPicker'
@@ -8,6 +8,8 @@ import PrescriptionLines, {
 import { useCreateVisit } from '@/features/visits/composables/useVisitMutations'
 import { patientService } from '@/features/patients/services/patientService'
 import { supabase } from '@/lib/supabase'
+import { useCan } from '@/features/auth/composables/useCan'
+import { useAuth } from '@/features/auth/composables/useAuth'
 import type { Patient } from '@/features/patients/types'
 
 type FormState = {
@@ -29,6 +31,17 @@ export default defineComponent({
     const route = useRoute()
     const router = useRouter()
     const createMut = useCreateVisit()
+    const { canCreateVisit } = useCan()
+    const { ready } = useAuth()
+
+    // Direct URL access guard — limited users typing /visits/new bounce home.
+    // Wait for auth to resolve before deciding; otherwise we'd redirect during
+    // the initial render when role is still unknown.
+    watchEffect(() => {
+      if (ready.value && !canCreateVisit.value) {
+        router.replace({ name: 'visits' })
+      }
+    })
 
     const state = reactive<FormState>({
       patient: null,

@@ -19,6 +19,7 @@ import MovementsTable from '@/features/inventory/components/MovementsTable'
 import StockBadge from '@/features/inventory/components/StockBadge'
 import ExpiryBadge from '@/features/inventory/components/ExpiryBadge'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import { useCan } from '@/features/auth/composables/useCan'
 
 function fmtMoney(v: number | null | undefined) {
   if (v === null || v === undefined) return '—'
@@ -52,6 +53,7 @@ export default defineComponent({
     const sellOpen = ref(false)
     const confirmOpen = ref(false)
     const softDeleteMut = useSoftDeleteProduct()
+    const { canManageProducts } = useCan()
 
     const performDelete = async () => {
       if (!product.value) return
@@ -161,22 +163,26 @@ export default defineComponent({
                     <ArrowUpDown class="size-4" />
                     <span>Record movement</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => (editOpen.value = true)}
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-accent"
-                  >
-                    <Pencil class="size-4" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => (confirmOpen.value = true)}
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 class="size-4" />
-                    <span>Remove</span>
-                  </button>
+                  {canManageProducts.value && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => (editOpen.value = true)}
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-accent"
+                      >
+                        <Pencil class="size-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => (confirmOpen.value = true)}
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 class="size-4" />
+                        <span>Remove</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               <div class="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-4">

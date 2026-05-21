@@ -12,6 +12,7 @@ import RecordMovementDialog from '@/features/inventory/components/RecordMovement
 import SellProductDialog from '@/features/inventory/components/SellProductDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Pagination from '@/components/shared/Pagination'
+import { useCan } from '@/features/auth/composables/useCan'
 import type { Product } from '@/features/inventory/types'
 
 export default defineComponent({
@@ -32,6 +33,8 @@ export default defineComponent({
 
     const rows = computed(() => data.value?.rows ?? [])
     const total = computed(() => data.value?.total ?? 0)
+
+    const { canManageProducts } = useCan()
 
     const formOpen = ref(false)
     const editing = ref<Product | null>(null)
@@ -89,14 +92,16 @@ export default defineComponent({
                   : `${total.value} product${total.value === 1 ? '' : 's'}`}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openNew}
-              class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
-            >
-              <Plus class="size-4" />
-              <span>New product</span>
-            </button>
+            {canManageProducts.value && (
+              <button
+                type="button"
+                onClick={openNew}
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+              >
+                <Plus class="size-4" />
+                <span>New product</span>
+              </button>
+            )}
           </div>
 
           <div class="relative max-w-md">

@@ -1,6 +1,7 @@
 import { defineComponent, type PropType } from "vue";
 import { Pencil, Trash2 } from "lucide-vue-next";
 import { useRouter } from "vue-router";
+import { useCan } from "@/features/auth/composables/useCan";
 import type { Patient } from "../types";
 
 function formatDate(s: string | null | undefined) {
@@ -27,6 +28,7 @@ export default defineComponent({
   },
   setup(props) {
     const router = useRouter();
+    const { canDeletePatient } = useCan();
 
     const goToDetail = (id: string) => {
       router.push({ name: "patient-detail", params: { id } });
@@ -77,15 +79,17 @@ export default defineComponent({
                     >
                       <Pencil class="size-4" />
                     </button>
-                    <button
-                      type="button"
-                      class="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                      onClick={() => props.onDelete(p)}
-                      title="Remove"
-                      aria-label={`Remove ${p.name}`}
-                    >
-                      <Trash2 class="size-4" />
-                    </button>
+                    {canDeletePatient.value && (
+                      <button
+                        type="button"
+                        class="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                        onClick={() => props.onDelete(p)}
+                        title="Remove"
+                        aria-label={`Remove ${p.name}`}
+                      >
+                        <Trash2 class="size-4" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

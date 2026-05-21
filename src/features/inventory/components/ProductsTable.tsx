@@ -1,6 +1,7 @@
 import { defineComponent, type PropType } from 'vue'
 import { Pencil, Trash2, ArrowUpDown, ShoppingCart } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import { useCan } from '@/features/auth/composables/useCan'
 import type { Product } from '../types'
 import StockBadge from './StockBadge'
 import ExpiryBadge from './ExpiryBadge'
@@ -36,6 +37,7 @@ export default defineComponent({
   },
   setup(props) {
     const router = useRouter()
+    const { canManageProducts } = useCan()
     const goToDetail = (id: string) =>
       router.push({ name: 'inventory-detail', params: { id } })
 
@@ -121,24 +123,28 @@ export default defineComponent({
                     >
                       <ArrowUpDown class="size-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => props.onEdit(p)}
-                      class="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-                      title="Edit"
-                      aria-label="Edit"
-                    >
-                      <Pencil class="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => props.onDelete(p)}
-                      class="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                      title="Remove"
-                      aria-label="Remove"
-                    >
-                      <Trash2 class="size-4" />
-                    </button>
+                    {canManageProducts.value && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => props.onEdit(p)}
+                          class="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                          title="Edit"
+                          aria-label="Edit"
+                        >
+                          <Pencil class="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => props.onDelete(p)}
+                          class="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          title="Remove"
+                          aria-label="Remove"
+                        >
+                          <Trash2 class="size-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

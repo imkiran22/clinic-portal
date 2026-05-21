@@ -5,6 +5,7 @@ import { usePatient } from '@/features/patients/composables/usePatients'
 import { useSoftDeletePatient } from '@/features/patients/composables/usePatientMutations'
 import PatientFormDialog from '@/features/patients/components/PatientFormDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import { useCan } from '@/features/auth/composables/useCan'
 import { useVisitsForPatient } from '@/features/visits/composables/useVisits'
 import VisitsTable from '@/features/visits/components/VisitsTable'
 import VisitDetailModal from '@/features/visits/components/VisitDetailModal'
@@ -28,6 +29,7 @@ export default defineComponent({
 
     const { data, isLoading, isError, error } = usePatient(id)
     const { data: visits, isLoading: visitsLoading } = useVisitsForPatient(id)
+    const { canDeletePatient, canCreateVisit } = useCan()
 
     const editOpen = ref(false)
     const confirmOpen = ref(false)
@@ -125,14 +127,16 @@ export default defineComponent({
                     <Pencil class="size-4" />
                     <span>Edit</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => (confirmOpen.value = true)}
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 class="size-4" />
-                    <span>Remove</span>
-                  </button>
+                  {canDeletePatient.value && (
+                    <button
+                      type="button"
+                      onClick={() => (confirmOpen.value = true)}
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 class="size-4" />
+                      <span>Remove</span>
+                    </button>
+                  )}
                 </div>
               </div>
               <div class="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -165,19 +169,21 @@ export default defineComponent({
                         }`}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push({
-                      name: 'visit-new',
-                      query: { patient_id: data.value!.id },
-                    })
-                  }
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
-                >
-                  <Plus class="size-4" />
-                  <span>New visit</span>
-                </button>
+                {canCreateVisit.value && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push({
+                        name: 'visit-new',
+                        query: { patient_id: data.value!.id },
+                      })
+                    }
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+                  >
+                    <Plus class="size-4" />
+                    <span>New visit</span>
+                  </button>
+                )}
               </div>
               <div class="p-4">
                 {visitsLoading.value ? (

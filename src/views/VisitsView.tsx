@@ -8,6 +8,7 @@ import {
 import VisitsTable from '@/features/visits/components/VisitsTable'
 import VisitDetailModal from '@/features/visits/components/VisitDetailModal'
 import Pagination from '@/components/shared/Pagination'
+import { useCan } from '@/features/auth/composables/useCan'
 import type { Visit } from '@/features/visits/types'
 
 export default defineComponent({
@@ -20,6 +21,8 @@ export default defineComponent({
 
     const rows = computed(() => data.value?.rows ?? [])
     const total = computed(() => data.value?.total ?? 0)
+
+    const { canCreateVisit } = useCan()
 
     const selectedVisit = ref<Visit | null>(null)
     const detailOpen = ref(false)
@@ -41,14 +44,16 @@ export default defineComponent({
                   : `${total.value} visit${total.value === 1 ? '' : 's'}`}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push({ name: 'visit-new' })}
-              class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
-            >
-              <Plus class="size-4" />
-              <span>New visit</span>
-            </button>
+            {canCreateVisit.value && (
+              <button
+                type="button"
+                onClick={() => router.push({ name: 'visit-new' })}
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+              >
+                <Plus class="size-4" />
+                <span>New visit</span>
+              </button>
+            )}
           </div>
 
           {isError.value && (
