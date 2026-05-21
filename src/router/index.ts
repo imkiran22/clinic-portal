@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { supabase } from '@/lib/supabase'
-import { authService } from '@/features/auth/services/authService'
+import { watch } from 'vue'
+import { useAuth } from '@/features/auth/composables/useAuth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -75,12 +75,32 @@ export const router = createRouter({
   routes,
 })
 
+// Auth state is loaded once at app start by useAuth() and kept in sync via
+// onAuthStateChange. The guard reads from those refs — no per-nav network
+// call. Earlier code awaited getSession() + getProfile() on every nav, which
+// could stall a sidebar click after the page sat idle and Supabase's
+// underlying connection went sleepy.
+const auth = useAuth()
+
+async function waitForAuthReady(): Promise<void> {
+  if (auth.ready.value) return
+  await new Promise<void>((resolve) => {
+    const stop = watch(auth.ready, (isReady) => {
+      if (isReady) {
+        stop()
+        resolve()
+      }
+    })
+  })
+}
+
 router.beforeEach(async (to) => {
-  const session = await authService.getSession(supabase)
+  await waitForAuthReady()
+  const session = auth.session.value
+  const profile = auth.profile.value
 
   // Authenticated user hitting /login → bounce them to where they belong.
   if (to.name === 'login' && session) {
-    const profile = await authService.getProfile(supabase, session.user.id)
     return profile ? { name: 'dashboard' } : { name: 'contact-admin' }
   }
 
@@ -90,7 +110,6 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  const profile = await authService.getProfile(supabase, session.user.id)
   if (!profile) {
     return { name: 'contact-admin' }
   }
