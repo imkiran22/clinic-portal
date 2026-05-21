@@ -45,6 +45,20 @@ function hasStuckQueries(): boolean {
   })
 }
 
+// Refuse to reload (and lose unsaved input) when the user is mid-edit.
+// Heuristic, not exhaustive — update this list when new long-form pages
+// or modal entry points get added:
+//   - Any modal: every Modal renders [role=dialog][aria-modal=true]
+//     (sell, record movement, edit patient, edit product, etc.)
+//   - /visits/new — full-page form outside any modal
+// In those cases we still soft-nudge but stop short of reloading; the
+// staff can hit F5 themselves if it's genuinely wedged.
+function isUnsafeToReload(): boolean {
+  if (document.querySelector('[role="dialog"][aria-modal="true"]')) return true
+  if (window.location.pathname === '/visits/new') return true
+  return false
+}
+
 if (typeof document !== 'undefined') {
   let hiddenAt: number | null = null
 
@@ -60,20 +74,26 @@ if (typeof document !== 'undefined') {
 
     if (idleMs < QUICK_MS) return
 
-    if (idleMs >= RELOAD_THRESHOLD_MS) {
+    const safeToReload = !isUnsafeToReload()
+
+    if (idleMs >= RELOAD_THRESHOLD_MS && safeToReload) {
       window.location.reload()
       return
     }
 
-    // 5–10s idle: try the cheap fix first, then verify.
+    // 5–20s idle, or anything when there's unsaved input — try the
+    // cheap fix first, then verify. Only escalate to a reload if it's
+    // safe (no open modal / form route).
     softNudge()
     window.setTimeout(() => {
-      if (hasStuckQueries()) window.location.reload()
+      if (hasStuckQueries() && !isUnsafeToReload()) {
+        window.location.reload()
+      }
     }, STUCK_CHECK_MS)
   })
 
   window.addEventListener('pageshow', (e) => {
-    if ((e as PageTransitionEvent).persisted) {
+    if ((e as PageTransitionEvent).persisted && !isUnsafeToReload()) {
       window.location.reload()
     }
   })
