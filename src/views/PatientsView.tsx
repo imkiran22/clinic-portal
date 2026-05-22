@@ -1,6 +1,6 @@
 import { computed, defineComponent, ref, watch } from 'vue'
 import { refDebounced } from '@vueuse/core'
-import { Plus, Search } from 'lucide-vue-next'
+import { Plus, Search, X } from 'lucide-vue-next'
 import {
   usePatients,
   PATIENTS_PAGE_SIZE,
@@ -10,7 +10,20 @@ import PatientsTable from '@/features/patients/components/PatientsTable'
 import PatientFormDialog from '@/features/patients/components/PatientFormDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Pagination from '@/components/shared/Pagination'
-import type { Patient } from '@/features/patients/types'
+import type { Gender, Patient } from '@/features/patients/types'
+import type { PatientsSortBy } from '@/features/patients/services/patientService'
+
+const GENDER_OPTIONS: Array<{ value: Gender; label: string }> = [
+  { value: 'female', label: 'Female' },
+  { value: 'male', label: 'Male' },
+  { value: 'other', label: 'Other' },
+]
+
+const SORT_OPTIONS: Array<{ value: PatientsSortBy; label: string }> = [
+  { value: 'name', label: 'Name (A → Z)' },
+  { value: 'created_desc', label: 'Recently added' },
+  { value: 'updated_desc', label: 'Recently updated' },
+]
 
 export default defineComponent({
   name: 'PatientsView',
@@ -19,13 +32,49 @@ export default defineComponent({
     const debouncedSearch = refDebounced(searchInput, 300)
     const page = ref(1)
 
-    watch(debouncedSearch, () => {
+    const genders = ref<Gender[]>([])
+    const dateFrom = ref('')
+    const dateTo = ref('')
+    const sortBy = ref<PatientsSortBy>('name')
+
+    const filter = computed(() => ({
+      genders: genders.value,
+      dateFrom: dateFrom.value || null,
+      dateTo: dateTo.value || null,
+      sortBy: sortBy.value,
+    }))
+
+    // Reset to page 1 whenever search or filter changes — landing on
+    // an empty page after narrowing is a guaranteed bad UX.
+    watch([debouncedSearch, filter], () => {
       page.value = 1
     })
+
+    const hasAnyFilter = computed(
+      () =>
+        genders.value.length > 0 ||
+        !!dateFrom.value ||
+        !!dateTo.value ||
+        sortBy.value !== 'name',
+    )
+
+    const clearFilters = () => {
+      genders.value = []
+      dateFrom.value = ''
+      dateTo.value = ''
+      sortBy.value = 'name'
+    }
+
+    const toggleGender = (g: Gender) => {
+      genders.value = genders.value.includes(g)
+        ? genders.value.filter((x) => x !== g)
+        : [...genders.value, g]
+    }
 
     const { data, isLoading, isError, error, isFetching } = usePatients(
       debouncedSearch,
       page,
+      filter,
     )
 
     const rows = computed(() => data.value?.rows ?? [])
@@ -95,6 +144,114 @@ export default defineComponent({
             />
           </div>
 
+          {/* Filter bar — gender chips + date-added range + sort.
+              Same shape as the /sales filter card so the page feels
+              consistent. */}
+          <div class="rounded-md border border-border bg-card p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-xs uppercase tracking-wide text-muted-foreground">
+                Filters
+              </div>
+              {hasAnyFilter.value && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                  <X class="size-3" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
+
+            <div class="flex flex-wrap items-end gap-3">
+              <div>
+                <div class="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                  Gender
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  {GENDER_OPTIONS.map((g) => {
+                    const active = genders.value.includes(g.value)
+                    return (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() => toggleGender(g.value)}
+                        class={[
+                          'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                          active
+                            ? 'bg-accent text-accent-foreground border-transparent'
+                            : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                        ].join(' ')}
+                      >
+                        {g.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label
+                  class="text-xs uppercase tracking-wide text-muted-foreground block mb-1"
+                  for="patient-from"
+                >
+                  Added from
+                </label>
+                <input
+                  id="patient-from"
+                  type="date"
+                  value={dateFrom.value}
+                  onInput={(e: Event) =>
+                    (dateFrom.value = (e.target as HTMLInputElement).value)
+                  }
+                  class="h-[34px] w-[160px] rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label
+                  class="text-xs uppercase tracking-wide text-muted-foreground block mb-1"
+                  for="patient-to"
+                >
+                  to
+                </label>
+                <input
+                  id="patient-to"
+                  type="date"
+                  value={dateTo.value}
+                  onInput={(e: Event) =>
+                    (dateTo.value = (e.target as HTMLInputElement).value)
+                  }
+                  class="h-[34px] w-[160px] rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+
+              <div class="ml-auto">
+                <label
+                  class="text-xs uppercase tracking-wide text-muted-foreground block mb-1"
+                  for="patient-sort"
+                >
+                  Sort by
+                </label>
+                <select
+                  id="patient-sort"
+                  value={sortBy.value}
+                  onChange={(e: Event) =>
+                    (sortBy.value = (e.target as HTMLSelectElement)
+                      .value as PatientsSortBy)
+                  }
+                  class="h-[34px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           {isError.value && (
             <div class="rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
               {(error.value as { message?: string })?.message ?? 'Failed to load patients.'}
@@ -116,7 +273,9 @@ export default defineComponent({
             <div class="rounded-md border border-dashed border-border px-6 py-12 text-center text-muted-foreground">
               {debouncedSearch.value
                 ? `No patients match "${debouncedSearch.value}".`
-                : 'No patients yet. Click "New patient" to add one.'}
+                : hasAnyFilter.value
+                  ? 'No patients match the current filters.'
+                  : 'No patients yet. Click "New patient" to add one.'}
             </div>
           )}
 

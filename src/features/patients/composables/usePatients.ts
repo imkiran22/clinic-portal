@@ -1,19 +1,31 @@
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { computed, type Ref } from 'vue'
 import { supabase } from '@/lib/supabase'
-import { patientService } from '../services/patientService'
+import {
+  patientService,
+  type PatientsFilter,
+} from '../services/patientService'
 import { patientKeys } from '../queryKeys'
 
 export const PATIENTS_PAGE_SIZE = 100
 
-export function usePatients(search: Ref<string>, page: Ref<number>) {
+export function usePatients(
+  search: Ref<string>,
+  page: Ref<number>,
+  filter?: Ref<Omit<PatientsFilter, 'search'>>,
+) {
   return useQuery({
     queryKey: computed(() =>
-      patientKeys.list({ q: search.value, page: page.value }),
+      patientKeys.list({
+        q: search.value,
+        page: page.value,
+        filter: filter?.value,
+      }),
     ),
     queryFn: () =>
       patientService.list(supabase, {
         search: search.value,
+        ...(filter?.value ?? {}),
         page: page.value,
         pageSize: PATIENTS_PAGE_SIZE,
       }),

@@ -1,26 +1,75 @@
 import type { AppSupabaseClient } from '@/lib/supabase'
 import { getCurrentClinicId } from '@/lib/clinic'
-import type { Patient, PatientInput } from '../types'
+import type { Gender, Patient, PatientInput } from '../types'
+
+export type PatientsSortBy = 'name' | 'created_desc' | 'updated_desc'
+
+export type PatientsFilter = {
+  search?: string
+  genders?: Gender[]
+  // YYYY-MM-DD local calendar day; null = no bound.
+  dateFrom?: string | null
+  dateTo?: string | null
+  sortBy?: PatientsSortBy
+}
 
 export type ListResult = {
   rows: Patient[]
   total: number
 }
 
+function startOfLocalDayIso(ymd: string): string {
+  return new Date(ymd + 'T00:00:00').toISOString()
+}
+function endOfLocalDayIso(ymd: string): string {
+  const d = new Date(ymd + 'T00:00:00')
+  d.setHours(23, 59, 59, 999)
+  return d.toISOString()
+}
+
 export const patientService = {
   async list(
     sb: AppSupabaseClient,
-    args: { search?: string; page: number; pageSize: number },
+    args: PatientsFilter & { page: number; pageSize: number },
   ): Promise<ListResult> {
-    const { search, page, pageSize } = args
+    const {
+      search,
+      genders,
+      dateFrom,
+      dateTo,
+      sortBy = 'name',
+      page,
+      pageSize,
+    } = args
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
 
     let q = sb
       .from('patients_active')
       .select('*', { count: 'exact' })
-      .order('name')
       .range(from, to)
+
+    // Sort
+    if (sortBy === 'created_desc') {
+      q = q.order('created_at', { ascending: false })
+    } else if (sortBy === 'updated_desc') {
+      q = q.order('updated_at', { ascending: false })
+    } else {
+      q = q.order('name')
+    }
+
+    // Gender filter
+    if (genders && genders.length > 0) {
+      q = q.in('gender', genders)
+    }
+
+    // Date-added range (created_at). Bounds are inclusive local-day.
+    if (dateFrom) {
+      q = q.gte('created_at', startOfLocalDayIso(dateFrom))
+    }
+    if (dateTo) {
+      q = q.lte('created_at', endOfLocalDayIso(dateTo))
+    }
 
     const s = search?.trim()
     if (s) {
