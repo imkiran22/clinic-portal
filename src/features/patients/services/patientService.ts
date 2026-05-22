@@ -24,9 +24,28 @@ export const patientService = {
 
     const s = search?.trim()
     if (s) {
-      const isNumeric = /^\d+$/.test(s)
-      if (isNumeric) {
-        const PG_INT4_MAX = 2_147_483_647
+      const PG_INT4_MAX = 2_147_483_647
+
+      // "#1297" scopes the search to client number only — skips name +
+      // phone matching, which otherwise pollutes results when the number
+      // happens to appear inside someone's phone string.
+      if (s.startsWith('#')) {
+        const numStr = s.slice(1).trim()
+        if (/^\d+$/.test(numStr)) {
+          const asInt = Number(numStr)
+          if (Number.isFinite(asInt) && asInt >= 1 && asInt <= PG_INT4_MAX) {
+            q = q.eq('legacy_client_no', asInt)
+          } else {
+            // out-of-range int — return nothing
+            q = q.eq('legacy_client_no', -1)
+          }
+        } else {
+          // "#abc" or empty — return nothing rather than fall back to
+          // an unfiltered list which would surprise the user.
+          q = q.eq('legacy_client_no', -1)
+        }
+      } else if (/^\d+$/.test(s)) {
+        // Plain numeric search — match name + phone substring + client #.
         const clauses = [`name.ilike.%${s}%`, `phone.ilike.%${s}%`]
         const asInt = Number(s)
         if (Number.isFinite(asInt) && asInt >= 1 && asInt <= PG_INT4_MAX) {

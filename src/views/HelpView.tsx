@@ -238,6 +238,27 @@ export default defineComponent({
               phone. Search at the top filters by name, phone, or client
               number — type and results update as you go.
             </p>
+            <Note kind="tip">
+              <strong>Search tips:</strong>
+              <ul class="list-disc pl-5 mt-1 space-y-0.5">
+                <li>
+                  Typing a number (e.g. <code class="text-xs bg-muted px-1 rounded">1297</code>)
+                  matches any client number, plus any phone number containing
+                  those digits.
+                </li>
+                <li>
+                  Prefix with <code class="text-xs bg-muted px-1 rounded">#</code>
+                  (e.g. <code class="text-xs bg-muted px-1 rounded">#1297</code>)
+                  to search by <strong>client number only</strong> — useful
+                  when the same digits appear inside someone's phone and
+                  clutter the results.
+                </li>
+                <li>
+                  Typing letters (e.g. <code class="text-xs bg-muted px-1 rounded">Asha</code>)
+                  matches names.
+                </li>
+              </ul>
+            </Note>
 
             <h3 class="text-base font-medium pt-2">Add a patient</h3>
             <ol class="list-decimal pl-5 space-y-1">
