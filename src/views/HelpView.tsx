@@ -615,21 +615,62 @@ export default defineComponent({
               </li>
               <li>
                 Pick the patient, set the <strong>date &amp; time</strong>{' '}
-                (single picker — opens the OS calendar / clock), write a
-                short treatment description ("GFC", "Laser with peel",
-                "DPN removal"), optionally the session number.
+                using the calendar popover — date on the left, time with
+                AM/PM toggle on the right. Default is "today, next
+                half-hour" so most bookings only need a few clicks.
               </li>
               <li>
-                <strong>Doctor</strong> is optional — leave it{' '}
-                <em>Unassigned</em> when any doctor can see the patient, or
-                pick a specific doctor when the patient has asked for one
-                (e.g., "with Dr. Saranya"). If you're a doctor yourself,
-                the field pre-fills with your name. Filter chips at the
-                top of the list let you view "only my patients" the same
-                way.
+                Write a short <strong>treatment description</strong> (e.g.
+                "GFC", "Laser with peel", "DPN removal"). Optionally fill{' '}
+                <strong>Session #</strong> for repeat treatments (3rd
+                laser, 4th GFC, etc.).
+              </li>
+              <li>
+                <strong>Doctor</strong> is optional — leave it empty when
+                any doctor can see the patient, or pick a specific doctor
+                when the patient has asked for one (e.g., "with Dr.
+                Saranya"). Use the chip filter above the table to view
+                "only Dr. Saranya's day" at a glance.
+              </li>
+              <li>
+                Add <strong>Notes</strong> for anything that doesn't fit
+                the other fields — confirmation status ("Not confirmed
+                yet"), special requests, advance paid, etc.
               </li>
               <li>Save. Row appears in the list with status Scheduled.</li>
             </ol>
+
+            <h3 class="text-base font-medium pt-2">Filtering the list</h3>
+            <p>
+              The filter row above the table is a single line of toggles:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Search</strong> by patient name, phone, or{' '}
+                <code>#client</code> number (the same{' '}
+                <code>#</code>-prefix shortcut that works on /patients).
+              </li>
+              <li>
+                <strong>Status chips</strong> — Scheduled / Done /
+                Cancelled, multi-select. Landing state shows Scheduled
+                only.
+              </li>
+              <li>
+                <strong>Doctor chips</strong> — one per doctor in your
+                clinic. Click to filter to that doctor's appointments.
+              </li>
+              <li>
+                <strong>From / To dates</strong> — defaults to today.
+                Clear the dates to view the entire history.
+              </li>
+              <li>
+                <strong>Sort</strong> — Soonest first (today's roster top-down), Latest first, or Recently added (book log).
+              </li>
+              <li>
+                The small <strong>×</strong> button on the right resets
+                everything back to "today's roster".
+              </li>
+            </ul>
 
             <h3 class="text-base font-medium pt-2">Status flow</h3>
             <ul class="list-disc pl-5 space-y-1">

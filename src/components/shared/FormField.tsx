@@ -1,5 +1,6 @@
 import { defineComponent, type PropType } from 'vue'
 import { useField } from 'vee-validate'
+import DatePicker from './DatePicker'
 
 type SelectOption = { value: string; label: string }
 
@@ -44,6 +45,40 @@ export const TextField = defineComponent({
             class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         )}
+        {errorMessage.value && (
+          <p class="mt-1 text-xs text-destructive">{errorMessage.value}</p>
+        )}
+      </div>
+    )
+  },
+})
+
+// vee-validate-bound date picker. Bridges useField (string YYYY-MM-DD)
+// to the shared DatePicker so forms get the same popover calendar as
+// the rest of the app. Empty string is the canonical "no date" value.
+export const DateField = defineComponent({
+  name: 'DateField',
+  props: {
+    name: { type: String, required: true },
+    label: { type: String, required: true },
+    required: Boolean,
+    placeholder: { type: String, default: 'DD/MM/YYYY' },
+  },
+  setup(props) {
+    const { value, errorMessage, handleChange } = useField<string>(props.name)
+    return () => (
+      <div>
+        <label class="text-sm font-medium" for={props.name}>
+          {props.label}
+          {props.required && <span class="text-destructive ml-0.5">*</span>}
+        </label>
+        <div class="mt-1">
+          <DatePicker
+            modelValue={value.value ?? ''}
+            onUpdate:modelValue={(v: string) => handleChange(v)}
+            placeholder={props.placeholder}
+          />
+        </div>
         {errorMessage.value && (
           <p class="mt-1 text-xs text-destructive">{errorMessage.value}</p>
         )}

@@ -25,11 +25,13 @@ type NavItem = {
 
 const items: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  // Appointments lives right under Dashboard — it's the screen staff
+  // open first thing in the morning to see today's roster.
+  { to: '/appointments', label: 'Appointments', icon: CalendarClock },
   { to: '/patients', label: 'Patients', icon: Users },
   { to: '/inventory', label: 'Inventory', icon: Package },
   { to: '/categories', label: 'Categories', icon: Tags, privileged: true },
   { to: '/suppliers', label: 'Suppliers', icon: Truck, privileged: true },
-  { to: '/appointments', label: 'Appointments', icon: CalendarClock },
   { to: '/visits', label: 'Visits', icon: ClipboardList },
   { to: '/sales', label: 'Sales', icon: ShoppingCart },
   { to: '/movements', label: 'Movements', icon: ArrowRightLeft },

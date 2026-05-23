@@ -1,7 +1,7 @@
 import { computed, defineComponent, ref, watch, type PropType } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
-import { TextField } from '@/components/shared/FormField'
+import { DateField, TextField } from '@/components/shared/FormField'
 import CategoryPicker from '@/features/categories/components/CategoryPicker'
 import SupplierPicker from '@/features/suppliers/components/SupplierPicker'
 import {
@@ -117,7 +117,7 @@ export default defineComponent({
           </div>
           <TextField name="sku" label="SKU" placeholder="Unique per clinic" />
           <TextField name="batch_number" label="Batch number" />
-          <TextField name="expiry_date" label="Expiry date" type="date" />
+          <DateField name="expiry_date" label="Expiry date" />
           <TextField name="cost_price" label="Cost price" placeholder="0.00" />
           <TextField
             name="selling_price"
