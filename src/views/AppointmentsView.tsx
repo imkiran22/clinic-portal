@@ -38,13 +38,54 @@ const SORT_OPTIONS: Array<{ value: AppointmentsSortBy; label: string }> = [
   { value: 'created_desc', label: 'Recently added' },
 ]
 
-function todayIsoDate(): string {
-  const d = new Date()
+function isoDay(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
+
+function todayIsoDate(): string {
+  return isoDay(new Date())
+}
+
+// Quick-range presets. Each returns [from, to] as YYYY-MM-DD strings
+// for the local timezone. "custom" is handled separately — when that
+// mode is active the date pickers are revealed and the user picks
+// from / to directly.
+type DateRangeMode = 'today' | 'tomorrow' | 'week' | 'custom'
+
+function rangeFor(mode: Exclude<DateRangeMode, 'custom'>): {
+  from: string
+  to: string
+} {
+  const now = new Date()
+  if (mode === 'today') {
+    const d = isoDay(now)
+    return { from: d, to: d }
+  }
+  if (mode === 'tomorrow') {
+    const t = new Date(now)
+    t.setDate(t.getDate() + 1)
+    const d = isoDay(t)
+    return { from: d, to: d }
+  }
+  // 'week' — today through Saturday (assuming Mon–Sat clinic week);
+  // if today is Sunday we still show today through next Saturday.
+  const start = isoDay(now)
+  const endDate = new Date(now)
+  const dow = endDate.getDay() // 0 = Sun, 6 = Sat
+  const daysToSat = (6 - dow + 7) % 7
+  endDate.setDate(endDate.getDate() + daysToSat)
+  return { from: start, to: isoDay(endDate) }
+}
+
+const RANGE_OPTIONS: Array<{ value: DateRangeMode; label: string }> = [
+  { value: 'today', label: 'Today' },
+  { value: 'tomorrow', label: 'Tomorrow' },
+  { value: 'week', label: 'This week' },
+  { value: 'custom', label: 'Custom' },
+]
 
 export default defineComponent({
   name: 'AppointmentsView',
@@ -62,6 +103,29 @@ export default defineComponent({
     const dateTo = ref(today)
     const sortBy = ref<AppointmentsSortBy>('scheduled_asc')
     const page = ref(1)
+
+    // Quick-range chip state. When the user picks Today/Tomorrow/Week,
+    // dateFrom + dateTo are derived; the pickers stay hidden. Custom
+    // mode reveals the pickers and the user owns dateFrom/dateTo. Picking
+    // a date manually also flips us into custom — see watchers below.
+    const rangeMode = ref<DateRangeMode>('today')
+    const setRange = (mode: DateRangeMode) => {
+      rangeMode.value = mode
+      if (mode === 'custom') return
+      const r = rangeFor(mode)
+      dateFrom.value = r.from
+      dateTo.value = r.to
+    }
+    // If the user edits a picker while a quick range is active,
+    // assume they want custom — flips the chip so the change sticks
+    // visually and the pickers stay open.
+    watch([dateFrom, dateTo], ([from, to]) => {
+      if (rangeMode.value === 'custom') return
+      const expected = rangeFor(rangeMode.value)
+      if (from !== expected.from || to !== expected.to) {
+        rangeMode.value = 'custom'
+      }
+    })
 
     const { data: doctors } = useDoctors()
 
@@ -101,9 +165,8 @@ export default defineComponent({
       searchInput.value = ''
       statuses.value = ['scheduled']
       doctorIds.value = []
-      dateFrom.value = today
-      dateTo.value = today
       sortBy.value = 'scheduled_asc'
+      setRange('today')
     }
 
     const toggleStatus = (s: AppointmentStatus) => {
@@ -277,25 +340,48 @@ export default defineComponent({
               </div>
             )}
 
-            <div class="flex items-center gap-1 text-xs text-muted-foreground">
-              <div class="w-[120px]">
-                <DatePicker
-                  modelValue={dateFrom.value}
-                  onUpdate:modelValue={(v: string) => (dateFrom.value = v)}
-                  placeholder="From"
-                  size="sm"
-                />
-              </div>
-              <span class="opacity-60">→</span>
-              <div class="w-[120px]">
-                <DatePicker
-                  modelValue={dateTo.value}
-                  onUpdate:modelValue={(v: string) => (dateTo.value = v)}
-                  placeholder="To"
-                  size="sm"
-                />
-              </div>
+            <div class="flex items-center gap-1.5">
+              {RANGE_OPTIONS.map((r) => {
+                const active = rangeMode.value === r.value
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRange(r.value)}
+                    class={[
+                      'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                      active
+                        ? 'bg-accent text-accent-foreground border-transparent'
+                        : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                    ].join(' ')}
+                  >
+                    {r.label}
+                  </button>
+                )
+              })}
             </div>
+
+            {rangeMode.value === 'custom' && (
+              <div class="flex items-center gap-1 text-xs text-muted-foreground">
+                <div class="w-[120px]">
+                  <DatePicker
+                    modelValue={dateFrom.value}
+                    onUpdate:modelValue={(v: string) => (dateFrom.value = v)}
+                    placeholder="From"
+                    size="sm"
+                  />
+                </div>
+                <span class="opacity-60">→</span>
+                <div class="w-[120px]">
+                  <DatePicker
+                    modelValue={dateTo.value}
+                    onUpdate:modelValue={(v: string) => (dateTo.value = v)}
+                    placeholder="To"
+                    size="sm"
+                  />
+                </div>
+              </div>
+            )}
 
             <select
               aria-label="Sort appointments by"
