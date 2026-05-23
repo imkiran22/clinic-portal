@@ -759,12 +759,78 @@ export default defineComponent({
               the quantity and retry.
             </Note>
 
+            <h3 class="text-base font-medium pt-2">
+              Linking a walk-in visit to today's appointment
+            </h3>
+            <p>
+              When you record a visit for a patient who already had a
+              booking today, the portal shows a <strong>yellow box</strong>{' '}
+              at the top of the visit form:
+            </p>
+            <p class="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 not-prose">
+              <strong>This patient has a scheduled appointment today.</strong>
+              <span class="opacity-80">
+                {' '}Link it so saving this visit also marks the appointment
+                Done. Otherwise it'll stay Scheduled.
+              </span>
+              <br />
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 mt-1 rounded-md bg-amber-500/10 border border-amber-500/40 text-[11px] font-medium">
+                🔗 11:30 AM · Laser with peel (#3)
+              </span>
+            </p>
+            <p>
+              <strong>What it does.</strong> Click the time on the box and
+              that booking will be marked <strong>Done</strong>{' '}
+              automatically when you save the visit — no need to go back
+              to the Appointments page afterwards.
+            </p>
+            <p>
+              <strong>Why it exists.</strong> Earlier, if a doctor went
+              straight to <em>Visits → New visit</em> and recorded a
+              patient, the booking on the Appointments page stayed as
+              "Scheduled" forever — staff had to remember to tick it off
+              by hand. One click on the yellow notice ties the two
+              together.
+            </p>
+            <p>
+              <strong>When to skip the link:</strong>
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                It's a different patient with a similar name — don't link
+                to the wrong slot.
+              </li>
+              <li>
+                The booking was for tomorrow, not today (the box only
+                shows today's bookings).
+              </li>
+              <li>
+                The patient walked in unscheduled. Just leave the box
+                alone and save normally.
+              </li>
+            </ul>
+            <p>
+              If you arrived at the visit form via the appointment row's{' '}
+              <strong>✓</strong> button on the Appointments page, the link
+              is already wired up — you'll see a <strong>blue</strong>{' '}
+              banner instead of yellow, and there's nothing to click.
+            </p>
+
             <h3 class="text-base font-medium pt-2">Browse visit history</h3>
             <p>
               The Visits page lists all visits newest-first. Click any row
               to see the full visit detail (notes, treatment, dispensed
               lines with totals). Or open a patient and scroll to their{' '}
               <strong>Visit history</strong> card.
+            </p>
+            <p>
+              The filter bar at the top mirrors{' '}
+              <strong>Appointments</strong>: a search box (name / phone /
+              <code>#</code>id), date-range chips (Today / Last 7 days /
+              Last 30 days / All time / Custom), and a{' '}
+              <strong>Filters</strong> button that opens a modal with a
+              multi-patient picker. The <strong>×</strong> on the right
+              clears everything back to All time.
             </p>
           </Section>
 
