@@ -1,7 +1,8 @@
 import { computed, defineComponent, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { refDebounced } from '@vueuse/core'
-import { Plus, Search, X } from 'lucide-vue-next'
+import { Plus, Search, SlidersHorizontal, X } from 'lucide-vue-next'
+import Modal from '@/components/shared/Modal'
 import {
   useAppointments,
   APPOINTMENTS_PAGE_SIZE,
@@ -128,6 +129,24 @@ export default defineComponent({
     })
 
     const { data: doctors } = useDoctors()
+
+    // Status / doctor / sort live in a "More filters" modal so the
+    // main row stays focused on the common controls (search + date
+    // range). The badge on the trigger button shows how many of these
+    // are non-default, so a glance tells staff whether the view is
+    // narrowed.
+    const moreFiltersOpen = ref(false)
+    const extraFiltersCount = computed(() => {
+      let n = 0
+      if (
+        statuses.value.length !== 1 ||
+        statuses.value[0] !== 'scheduled'
+      )
+        n += 1
+      if (doctorIds.value.length > 0) n += 1
+      if (sortBy.value !== 'scheduled_asc') n += 1
+      return n
+    })
 
     const filter = computed(() => ({
       patientSearch: debouncedSearch.value,
@@ -280,7 +299,10 @@ export default defineComponent({
             </button>
           </div>
 
-          {/* Compact inline filter row — mirrors PatientsView. */}
+          {/* Primary filter row — search + date range chips only.
+              Status / doctor / sort live in the More-filters modal so
+              the bar stays clean for the common "show me today's
+              roster" flow. */}
           <div class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
             <div class="relative w-[240px]">
               <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -294,51 +316,6 @@ export default defineComponent({
                 class="h-7 w-full pl-8 pr-2 rounded-md border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-
-            <div class="flex items-center gap-1.5">
-              {STATUS_OPTIONS.map((s) => {
-                const active = statuses.value.includes(s.value)
-                return (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => toggleStatus(s.value)}
-                    class={[
-                      'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
-                      active
-                        ? 'bg-accent text-accent-foreground border-transparent'
-                        : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
-                    ].join(' ')}
-                  >
-                    {s.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            {(doctors.value?.length ?? 0) > 0 && (
-              <div class="flex items-center gap-1.5">
-                {(doctors.value ?? []).map((d) => {
-                  const active = doctorIds.value.includes(d.user_id)
-                  return (
-                    <button
-                      key={d.user_id}
-                      type="button"
-                      onClick={() => toggleDoctor(d.user_id)}
-                      class={[
-                        'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
-                        active
-                          ? 'bg-accent text-accent-foreground border-transparent'
-                          : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
-                      ].join(' ')}
-                      title={`Filter by ${d.display_name}`}
-                    >
-                      {d.display_name}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
 
             <div class="flex items-center gap-1.5">
               {RANGE_OPTIONS.map((r) => {
@@ -383,21 +360,20 @@ export default defineComponent({
               </div>
             )}
 
-            <select
-              aria-label="Sort appointments by"
-              value={sortBy.value}
-              onChange={(e: Event) =>
-                (sortBy.value = (e.target as HTMLSelectElement)
-                  .value as AppointmentsSortBy)
-              }
-              class="h-7 rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+            <button
+              type="button"
+              onClick={() => (moreFiltersOpen.value = true)}
+              class="inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-border text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+              aria-label="More filters"
             >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              <SlidersHorizontal class="size-3.5" />
+              <span>Filters</span>
+              {extraFiltersCount.value > 0 && (
+                <span class="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium tabular-nums">
+                  {extraFiltersCount.value}
+                </span>
+              )}
+            </button>
 
             {hasNonDefaultFilter.value && (
               <button
@@ -488,6 +464,94 @@ export default defineComponent({
           onUpdate:open={(v: boolean) => (deleteOpen.value = v)}
           onConfirm={performDelete}
         />
+
+        <Modal
+          open={moreFiltersOpen.value}
+          title="More filters"
+          size="max-w-md"
+          onUpdate:open={(v: boolean) => (moreFiltersOpen.value = v)}
+        >
+          <div class="space-y-5">
+            <div>
+              <h3 class="text-sm font-medium mb-2">Status</h3>
+              <div class="flex flex-wrap gap-1.5">
+                {STATUS_OPTIONS.map((s) => {
+                  const active = statuses.value.includes(s.value)
+                  return (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => toggleStatus(s.value)}
+                      class={[
+                        'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                        active
+                          ? 'bg-accent text-accent-foreground border-transparent'
+                          : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                      ].join(' ')}
+                    >
+                      {s.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {(doctors.value?.length ?? 0) > 0 && (
+              <div>
+                <h3 class="text-sm font-medium mb-2">Doctor</h3>
+                <div class="flex flex-wrap gap-1.5">
+                  {(doctors.value ?? []).map((d) => {
+                    const active = doctorIds.value.includes(d.user_id)
+                    return (
+                      <button
+                        key={d.user_id}
+                        type="button"
+                        onClick={() => toggleDoctor(d.user_id)}
+                        class={[
+                          'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                          active
+                            ? 'bg-accent text-accent-foreground border-transparent'
+                            : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                        ].join(' ')}
+                      >
+                        {d.display_name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 class="text-sm font-medium mb-2">Sort by</h3>
+              <select
+                aria-label="Sort appointments by"
+                value={sortBy.value}
+                onChange={(e: Event) =>
+                  (sortBy.value = (e.target as HTMLSelectElement)
+                    .value as AppointmentsSortBy)
+                }
+                class="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => (moreFiltersOpen.value = false)}
+                class="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
     )
   },
