@@ -20,6 +20,7 @@ import StockBadge from '@/features/inventory/components/StockBadge'
 import ExpiryBadge from '@/features/inventory/components/ExpiryBadge'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { useCan } from '@/features/auth/composables/useCan'
+import { formatDateTime as fmtDateTime } from '@/lib/datetime'
 
 function fmtMoney(v: number | null | undefined) {
   if (v === null || v === undefined) return '—'
@@ -27,15 +28,6 @@ function fmtMoney(v: number | null | undefined) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-}
-
-function fmtDateTime(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
 }
 
 export default defineComponent({

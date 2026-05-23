@@ -12,6 +12,8 @@ import { useSetAppointmentStatus } from '@/features/appointments/composables/use
 import { supabase } from '@/lib/supabase'
 import { useCan } from '@/features/auth/composables/useCan'
 import { useAuth } from '@/features/auth/composables/useAuth'
+import { formatDateTime } from '@/lib/datetime'
+import DatePicker from '@/components/shared/DatePicker'
 import type { Patient } from '@/features/patients/types'
 import type { Appointment } from '@/features/appointments/types'
 
@@ -217,7 +219,7 @@ export default defineComponent({
                 </span>
               )}
               <span class="text-muted-foreground">
-                {' '}· {new Date(linkedAppointment.value.scheduled_at).toLocaleString()}
+                {' '}· {formatDateTime(linkedAppointment.value.scheduled_at)}
               </span>
               <div class="text-xs opacity-80 mt-0.5">
                 Saving this visit will mark the appointment as done.
@@ -243,18 +245,16 @@ export default defineComponent({
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="text-sm font-medium" for="visit-followup">
-                Follow-up date
-              </label>
-              <input
-                id="visit-followup"
-                type="date"
-                value={state.followup_date}
-                onInput={(e: Event) =>
-                  (state.followup_date = (e.target as HTMLInputElement).value)
-                }
-                class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <label class="text-sm font-medium">Follow-up date</label>
+              <div class="mt-1">
+                <DatePicker
+                  modelValue={state.followup_date}
+                  onUpdate:modelValue={(v: string) =>
+                    (state.followup_date = v)
+                  }
+                  placeholder="Optional"
+                />
+              </div>
             </div>
           </div>
 

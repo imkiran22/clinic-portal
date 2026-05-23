@@ -73,23 +73,42 @@
   }
 }
 
+/* Compact variant for VueDatePicker — matches the 28px height of
+   filter-row chips so the pickers sit on the same baseline. Scope
+   limited to .dp-sm so the default form-sized picker is unaffected. */
+.dp-sm {
+  --dp-font-size: 0.75rem;
+  --dp-input-padding: 4px 24px 4px 10px;
+  --dp-input-icon-padding: 28px;
+  --dp-input-not-clearable-padding: 8px;
+  --dp-border-radius: 6px;
+}
+
 /* Date inputs — Chromium/Brave/Safari render the format hint
    ("dd/mm/yyyy") in lowercase regardless of CSS. text-transform forces
    the displayed placeholder text to uppercase so it matches the visual
-   weight of other labels in the filter bar. */
-input[type='date'] {
+   weight of other labels in the filter bar. Covers `date`, `time`, and
+   `datetime-local` so the appointment form picker matches the patient /
+   inventory filters. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
   text-transform: uppercase;
 }
 
 /* The native calendar-picker glyph defaults to black, which disappears
    against the dark theme. Invert + soft-alpha lifts it to a white icon
    that still reads in light mode (rule is scoped to .dark). */
-.dark input[type='date']::-webkit-calendar-picker-indicator {
+.dark input[type='date']::-webkit-calendar-picker-indicator,
+.dark input[type='time']::-webkit-calendar-picker-indicator,
+.dark input[type='datetime-local']::-webkit-calendar-picker-indicator {
   filter: invert(1);
   opacity: 0.7;
   cursor: pointer;
 }
-.dark input[type='date']::-webkit-calendar-picker-indicator:hover {
+.dark input[type='date']::-webkit-calendar-picker-indicator:hover,
+.dark input[type='time']::-webkit-calendar-picker-indicator:hover,
+.dark input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 

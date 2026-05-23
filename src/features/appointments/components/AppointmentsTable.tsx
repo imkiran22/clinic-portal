@@ -9,16 +9,8 @@ import {
 } from 'lucide-vue-next'
 import AppointmentStatusPill from './AppointmentStatusPill'
 import { useCan } from '@/features/auth/composables/useCan'
+import { formatDateTime } from '@/lib/datetime'
 import type { Appointment } from '../types'
-
-function fmtDateTime(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
-}
 
 export default defineComponent({
   name: 'AppointmentsTable',
@@ -44,6 +36,7 @@ export default defineComponent({
                 <th class="px-4 py-2 font-medium">Patient</th>
               )}
               <th class="px-4 py-2 font-medium">Treatment</th>
+              <th class="px-4 py-2 font-medium">Doctor</th>
               <th class="px-4 py-2 font-medium">Status</th>
               <th class="px-4 py-2 font-medium">Notes</th>
               <th class="px-4 py-2 font-medium">By</th>
@@ -58,7 +51,7 @@ export default defineComponent({
               return (
                 <tr key={a.id} class="border-t border-border">
                   <td class="px-4 py-2 text-muted-foreground whitespace-nowrap">
-                    {fmtDateTime(a.scheduled_at)}
+                    {formatDateTime(a.scheduled_at)}
                   </td>
                   {props.showPatient && (
                     <td class="px-4 py-2">
@@ -92,6 +85,9 @@ export default defineComponent({
                         Session #{a.session_number}
                       </div>
                     )}
+                  </td>
+                  <td class="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                    {a.assigned_doctor?.display_name ?? '—'}
                   </td>
                   <td class="px-4 py-2">
                     <AppointmentStatusPill status={a.status} />

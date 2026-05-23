@@ -5,6 +5,7 @@ import { router } from '@/router'
 import App from './App'
 import '@/styles/globals.css'
 import 'vue-sonner/style.css'
+import '@vuepic/vue-datepicker/dist/main.css'
 
 // Tab-resume strategy.
 //

@@ -1,14 +1,6 @@
 import { defineComponent, type PropType } from 'vue'
+import { formatDateTime as formatDate } from '@/lib/datetime'
 import type { StockMovement } from '../types'
-
-function formatDate(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
-}
 
 function typeLabel(t: string) {
   return t

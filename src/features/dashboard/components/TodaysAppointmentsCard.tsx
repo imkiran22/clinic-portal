@@ -2,17 +2,7 @@ import { computed, defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardCard from './DashboardCard'
 import { useTodaysAppointments } from '@/features/appointments/composables/useAppointments'
-
-function fmtTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return ''
-  }
-}
+import { formatTime } from '@/lib/datetime'
 
 export default defineComponent({
   name: 'TodaysAppointmentsCard',
@@ -58,6 +48,11 @@ export default defineComponent({
                       <div class="min-w-0">
                         <div class="text-sm truncate">
                           {a.patient?.name ?? 'Unknown patient'}
+                          {a.assigned_doctor?.display_name && (
+                            <span class="ml-1 text-xs text-muted-foreground">
+                              → {a.assigned_doctor.display_name}
+                            </span>
+                          )}
                         </div>
                         <div class="text-xs text-muted-foreground truncate">
                           {a.treatment_description}
@@ -67,7 +62,7 @@ export default defineComponent({
                         </div>
                       </div>
                       <div class="text-xs tabular-nums text-muted-foreground shrink-0">
-                        {fmtTime(a.scheduled_at)}
+                        {formatTime(a.scheduled_at)}
                       </div>
                     </button>
                   </li>

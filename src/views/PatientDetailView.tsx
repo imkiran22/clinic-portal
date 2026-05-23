@@ -10,15 +10,7 @@ import { useVisitsForPatient } from '@/features/visits/composables/useVisits'
 import VisitsTable from '@/features/visits/components/VisitsTable'
 import VisitDetailModal from '@/features/visits/components/VisitDetailModal'
 import type { Visit } from '@/features/visits/types'
-
-function formatDate(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
-}
+import { formatDateTime as formatDate } from '@/lib/datetime'
 
 export default defineComponent({
   name: 'PatientDetailView',

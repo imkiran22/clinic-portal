@@ -8,6 +8,11 @@ export default defineComponent({
     open: { type: Boolean, required: true },
     title: { type: String, required: true },
     size: { type: String, default: 'max-w-2xl' },
+    // Backdrop-click dismiss is the default. Forms that take real user
+    // input (e.g. AppointmentFormDialog) opt out so a stray click on
+    // empty space doesn't nuke a half-filled draft. Esc + the explicit
+    // X / Cancel buttons still close it.
+    dismissOnBackdrop: { type: Boolean, default: true },
   },
   emits: ['update:open'],
   setup(props, { emit, slots }) {
@@ -31,7 +36,9 @@ export default defineComponent({
         {props.open && (
           <div
             class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => emit('update:open', false)}
+            onClick={() => {
+              if (props.dismissOnBackdrop) emit('update:open', false)
+            }}
           >
             <div
               class={`bg-card text-card-foreground rounded-lg shadow-lg w-full ${props.size} max-h-[90vh] overflow-auto`}

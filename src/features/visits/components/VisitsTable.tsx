@@ -1,20 +1,17 @@
 import { defineComponent, type PropType } from 'vue'
 import { Pill } from 'lucide-vue-next'
+import { formatDateTime } from '@/lib/datetime'
 import type { Visit } from '../types'
 
-function formatDate(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
-}
+// Re-export under the original name so the template below stays the
+// same — visits show their full timestamp (date + time), not a
+// pretty-print of just the day.
+const formatDate = (s: string | null | undefined) => formatDateTime(s)
 
 function formatDay(s: string | null | undefined) {
   if (!s) return '—'
   try {
-    return new Date(s + 'T00:00:00').toLocaleDateString()
+    return new Date(s + 'T00:00:00').toLocaleDateString('en-GB')
   } catch {
     return '—'
   }

@@ -614,9 +614,19 @@ export default defineComponent({
                 .
               </li>
               <li>
-                Pick the patient, set the date + time, write a short
-                treatment description ("GFC", "Laser with peel", "DPN
-                removal"), optionally the session number.
+                Pick the patient, set the <strong>date &amp; time</strong>{' '}
+                (single picker — opens the OS calendar / clock), write a
+                short treatment description ("GFC", "Laser with peel",
+                "DPN removal"), optionally the session number.
+              </li>
+              <li>
+                <strong>Doctor</strong> is optional — leave it{' '}
+                <em>Unassigned</em> when any doctor can see the patient, or
+                pick a specific doctor when the patient has asked for one
+                (e.g., "with Dr. Saranya"). If you're a doctor yourself,
+                the field pre-fills with your name. Filter chips at the
+                top of the list let you view "only my patients" the same
+                way.
               </li>
               <li>Save. Row appears in the list with status Scheduled.</li>
             </ol>
@@ -648,8 +658,9 @@ export default defineComponent({
             <h3 class="text-base font-medium pt-2">Today's appointments on the dashboard</h3>
             <p>
               The leftmost dashboard card shows the day's scheduled
-              roster — count, names, times — at a glance. Click any row
-              to open the full Appointments page filtered to today.
+              roster — count, patient name, assigned doctor, treatment,
+              and time — at a glance. Click any row to open the full
+              Appointments page filtered to today.
             </p>
 
             <Note kind="info">

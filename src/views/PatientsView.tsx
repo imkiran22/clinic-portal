@@ -9,6 +9,7 @@ import { useSoftDeletePatient } from '@/features/patients/composables/usePatient
 import PatientsTable from '@/features/patients/components/PatientsTable'
 import PatientFormDialog from '@/features/patients/components/PatientFormDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import DatePicker from '@/components/shared/DatePicker'
 import Pagination from '@/components/shared/Pagination'
 import type { Gender, Patient } from '@/features/patients/types'
 import type { PatientsSortBy } from '@/features/patients/services/patientService'
@@ -137,17 +138,17 @@ export default defineComponent({
               No card chrome — labels are inline, controls share the
               same row, and the row only grows vertically when there
               isn't enough horizontal space. */}
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <div class="relative w-full max-w-sm">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
+            <div class="relative w-[240px]">
               <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
                 type="search"
-                placeholder="Search by name, phone, or client #"
+                placeholder="Search name / phone / #id"
                 value={searchInput.value}
                 onInput={(e: Event) =>
                   (searchInput.value = (e.target as HTMLInputElement).value)
                 }
-                class="h-9 w-full pl-9 pr-3 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                class="h-7 w-full pl-8 pr-2 rounded-md border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
@@ -172,27 +173,25 @@ export default defineComponent({
               })}
             </div>
 
-            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>Added</span>
-              <input
-                aria-label="Added from"
-                type="date"
-                value={dateFrom.value}
-                onInput={(e: Event) =>
-                  (dateFrom.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-7 w-[140px] rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <span>→</span>
-              <input
-                aria-label="Added to"
-                type="date"
-                value={dateTo.value}
-                onInput={(e: Event) =>
-                  (dateTo.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-7 w-[140px] rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">
+              <span class="opacity-70">Added</span>
+              <div class="w-[120px]">
+                <DatePicker
+                  modelValue={dateFrom.value}
+                  onUpdate:modelValue={(v: string) => (dateFrom.value = v)}
+                  placeholder="From"
+                  size="sm"
+                />
+              </div>
+              <span class="opacity-60">→</span>
+              <div class="w-[120px]">
+                <DatePicker
+                  modelValue={dateTo.value}
+                  onUpdate:modelValue={(v: string) => (dateTo.value = v)}
+                  placeholder="To"
+                  size="sm"
+                />
+              </div>
             </div>
 
             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -218,10 +217,11 @@ export default defineComponent({
               <button
                 type="button"
                 onClick={clearFilters}
-                class="inline-flex items-center gap-1 px-2 h-7 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                class="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Clear filters"
+                aria-label="Clear filters"
               >
-                <X class="size-3" />
-                <span>Clear</span>
+                <X class="size-3.5" />
               </button>
             )}
           </div>

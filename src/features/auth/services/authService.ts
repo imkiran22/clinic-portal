@@ -34,4 +34,32 @@ export const authService = {
     if (error) throw error
     return (data as Profile | null) ?? null
   },
+
+  /**
+   * Lookup against profiles for the appointments doctor picker.
+   * Restricted to role='doctor' — admins / receptionists shouldn't
+   * appear here even if they sometimes log in to create appointments.
+   * RLS on profiles already filters by clinic.
+   *
+   * The picker debounces input and calls this with a search fragment;
+   * the AppointmentsView filter row calls it without one to enumerate
+   * the full set for chips. Capped at 20 rows — a clinic with more
+   * than 20 doctors can refine via the search box.
+   */
+  async listDoctors(
+    sb: AppSupabaseClient,
+    opts: { search?: string; limit?: number } = {},
+  ): Promise<Profile[]> {
+    let q = sb
+      .from('profiles')
+      .select('user_id, clinic_id, display_name, role')
+      .eq('role', 'doctor')
+      .order('display_name')
+      .limit(opts.limit ?? 20)
+    const s = opts.search?.trim()
+    if (s) q = q.ilike('display_name', `%${s}%`)
+    const { data, error } = await q
+    if (error) throw error
+    return (data ?? []) as Profile[]
+  },
 }

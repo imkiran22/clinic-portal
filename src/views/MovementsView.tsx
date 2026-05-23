@@ -2,6 +2,7 @@ import { computed, defineComponent, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 import MultiProductPicker from '@/features/inventory/components/MultiProductPicker'
+import DatePicker from '@/components/shared/DatePicker'
 import Pagination from '@/components/shared/Pagination'
 import {
   useMovements,
@@ -9,15 +10,7 @@ import {
 } from '@/features/movements/composables/useMovements'
 import type { MovementsFilter } from '@/features/movements/types'
 import type { MovementType, Product } from '@/features/inventory/types'
-
-function fmtDateTime(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
-}
+import { formatDateTime as fmtDateTime } from '@/lib/datetime'
 
 // Display label + pill colour for each movement type. Inflows are emerald,
 // outflows are amber, except SALE which uses sky to distinguish it from
@@ -168,23 +161,15 @@ export default defineComponent({
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-[160px_160px_1fr] gap-3 items-start">
-              <input
-                type="date"
-                aria-label="From date"
-                value={dateFrom.value}
-                onInput={(e: Event) =>
-                  (dateFrom.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-[38px] w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              <DatePicker
+                modelValue={dateFrom.value}
+                onUpdate:modelValue={(v: string) => (dateFrom.value = v)}
+                placeholder="From"
               />
-              <input
-                type="date"
-                aria-label="To date"
-                value={dateTo.value}
-                onInput={(e: Event) =>
-                  (dateTo.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-[38px] w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              <DatePicker
+                modelValue={dateTo.value}
+                onUpdate:modelValue={(v: string) => (dateTo.value = v)}
+                placeholder="To"
               />
               <MultiProductPicker
                 modelValue={products.value}

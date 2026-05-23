@@ -1,21 +1,13 @@
 import { computed, defineComponent, type PropType } from 'vue'
 import Modal from '@/components/shared/Modal'
 import { useVisitMovements } from '../composables/useVisits'
+import { formatDateTime as fmtDateTime } from '@/lib/datetime'
 import type { Visit } from '../types'
-
-function fmtDateTime(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
-}
 
 function fmtDay(s: string | null | undefined) {
   if (!s) return '—'
   try {
-    return new Date(s + 'T00:00:00').toLocaleDateString()
+    return new Date(s + 'T00:00:00').toLocaleDateString('en-GB')
   } catch {
     return '—'
   }

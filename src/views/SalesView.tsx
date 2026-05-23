@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 import MultiPatientPicker from '@/features/patients/components/MultiPatientPicker'
 import MultiProductPicker from '@/features/inventory/components/MultiProductPicker'
+import DatePicker from '@/components/shared/DatePicker'
 import Pagination from '@/components/shared/Pagination'
 import {
   useSales,
@@ -12,6 +13,7 @@ import {
 import type { SalesFilter } from '@/features/sales/types'
 import type { Patient } from '@/features/patients/types'
 import type { Product } from '@/features/inventory/types'
+import { formatDateTime as fmtDateTime } from '@/lib/datetime'
 
 function fmtMoney(v: number | null | undefined) {
   if (v === null || v === undefined) return '—'
@@ -19,15 +21,6 @@ function fmtMoney(v: number | null | undefined) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-}
-
-function fmtDateTime(s: string | null | undefined) {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleString()
-  } catch {
-    return '—'
-  }
 }
 
 export default defineComponent({
@@ -147,23 +140,15 @@ export default defineComponent({
               )}
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-[160px_160px_1fr_1fr] gap-3 items-start">
-              <input
-                type="date"
-                aria-label="From date"
-                value={dateFrom.value}
-                onInput={(e: Event) =>
-                  (dateFrom.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-[38px] w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              <DatePicker
+                modelValue={dateFrom.value}
+                onUpdate:modelValue={(v: string) => (dateFrom.value = v)}
+                placeholder="From"
               />
-              <input
-                type="date"
-                aria-label="To date"
-                value={dateTo.value}
-                onInput={(e: Event) =>
-                  (dateTo.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-[38px] w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              <DatePicker
+                modelValue={dateTo.value}
+                onUpdate:modelValue={(v: string) => (dateTo.value = v)}
+                placeholder="To"
               />
               <MultiPatientPicker
                 modelValue={patients.value}

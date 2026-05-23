@@ -12,8 +12,15 @@ export type AppointmentListResult = {
   total: number
 }
 
+// Embedded joins:
+//   patient — name/phone/client# alongside each row.
+//   assigned_doctor — explicit FK hint so PostgREST disambiguates from
+//   other profile FKs (e.g. created_by). The join is to profiles.user_id;
+//   reading display_name straight from profiles means renaming a doctor
+//   propagates to historical rows. If you want a "snapshot" name instead,
+//   add an assigned_doctor_display column + trigger.
 const SELECT_WITH_PATIENT =
-  '*, patient:patients(id, name, legacy_client_no, phone)'
+  '*, patient:patients(id, name, legacy_client_no, phone), assigned_doctor:profiles!appointments_assigned_doctor_id_fkey(user_id, display_name, role)'
 
 function startOfLocalDayIso(ymd: string): string {
   return new Date(ymd + 'T00:00:00').toISOString()
@@ -77,6 +84,7 @@ export const appointmentService = {
     const {
       patientSearch,
       statuses,
+      doctorIds,
       dateFrom,
       dateTo,
       sortBy = 'scheduled_asc',
@@ -113,6 +121,9 @@ export const appointmentService = {
 
     if (statuses && statuses.length > 0) {
       q = q.in('status', statuses)
+    }
+    if (doctorIds && doctorIds.length > 0) {
+      q = q.in('assigned_doctor_id', doctorIds)
     }
     if (dateFrom) {
       q = q.gte('scheduled_at', startOfLocalDayIso(dateFrom))
@@ -208,6 +219,7 @@ export const appointmentService = {
         treatment_description: input.treatment_description,
         session_number: input.session_number,
         notes: input.notes,
+        assigned_doctor_id: input.assigned_doctor_id,
         created_by: user.id,
       })
       .select()
@@ -229,6 +241,7 @@ export const appointmentService = {
         treatment_description: input.treatment_description,
         session_number: input.session_number,
         notes: input.notes,
+        assigned_doctor_id: input.assigned_doctor_id,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

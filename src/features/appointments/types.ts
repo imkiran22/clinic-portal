@@ -10,6 +10,7 @@ export type Appointment = {
   status: AppointmentStatus
   notes: string | null
   visit_id: string | null
+  assigned_doctor_id: string | null
   created_by: string | null
   created_by_display: string | null
   deleted_at: string | null
@@ -23,15 +24,23 @@ export type Appointment = {
     legacy_client_no: number | null
     phone: string
   } | null
+  // Embedded when an assigned doctor is set. Joined to profiles so the
+  // displayed name stays current if a doctor renames themselves.
+  assigned_doctor?: {
+    user_id: string
+    display_name: string
+    role: string
+  } | null
 }
 
 export type AppointmentInput = {
   patient_id: string
-  // Local datetime; service combines to an ISO timestamp.
-  scheduled_at: string // ISO format with timezone
+  // ISO timestamp the server stores; derived from <input type="datetime-local">.
+  scheduled_at: string
   treatment_description: string
   session_number: number | null
   notes: string | null
+  assigned_doctor_id: string | null
 }
 
 export type AppointmentsFilter = {
@@ -39,6 +48,8 @@ export type AppointmentsFilter = {
   // only; numeric/text = name + phone + client# substring).
   patientSearch?: string
   statuses?: AppointmentStatus[]
+  // Multi-select of profiles.user_id values. Empty = all doctors.
+  doctorIds?: string[]
   // YYYY-MM-DD local calendar day. null = no bound.
   dateFrom?: string | null
   dateTo?: string | null

@@ -14,7 +14,9 @@ import AppointmentsTable from '@/features/appointments/components/AppointmentsTa
 import AppointmentFormDialog from '@/features/appointments/components/AppointmentFormDialog'
 import CancelReasonDialog from '@/features/appointments/components/CancelReasonDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import DatePicker from '@/components/shared/DatePicker'
 import Pagination from '@/components/shared/Pagination'
+import { useDoctors } from '@/features/auth/composables/useDoctors'
 import type {
   Appointment,
   AppointmentStatus,
@@ -55,14 +57,18 @@ export default defineComponent({
     const searchInput = ref('')
     const debouncedSearch = refDebounced(searchInput, 300)
     const statuses = ref<AppointmentStatus[]>(['scheduled'])
+    const doctorIds = ref<string[]>([])
     const dateFrom = ref(today)
     const dateTo = ref(today)
     const sortBy = ref<AppointmentsSortBy>('scheduled_asc')
     const page = ref(1)
 
+    const { data: doctors } = useDoctors()
+
     const filter = computed(() => ({
       patientSearch: debouncedSearch.value,
       statuses: statuses.value,
+      doctorIds: doctorIds.value,
       dateFrom: dateFrom.value || null,
       dateTo: dateTo.value || null,
       sortBy: sortBy.value,
@@ -85,6 +91,7 @@ export default defineComponent({
         debouncedSearch.value.trim().length > 0 ||
         statuses.value.length !== 1 ||
         statuses.value[0] !== 'scheduled' ||
+        doctorIds.value.length > 0 ||
         dateFrom.value !== today ||
         dateTo.value !== today ||
         sortBy.value !== 'scheduled_asc',
@@ -93,6 +100,7 @@ export default defineComponent({
     const resetFilters = () => {
       searchInput.value = ''
       statuses.value = ['scheduled']
+      doctorIds.value = []
       dateFrom.value = today
       dateTo.value = today
       sortBy.value = 'scheduled_asc'
@@ -102,6 +110,12 @@ export default defineComponent({
       statuses.value = statuses.value.includes(s)
         ? statuses.value.filter((x) => x !== s)
         : [...statuses.value, s]
+    }
+
+    const toggleDoctor = (id: string) => {
+      doctorIds.value = doctorIds.value.includes(id)
+        ? doctorIds.value.filter((x) => x !== id)
+        : [...doctorIds.value, id]
     }
 
     // ---------- form / dialogs ----------
@@ -204,17 +218,17 @@ export default defineComponent({
           </div>
 
           {/* Compact inline filter row — mirrors PatientsView. */}
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <div class="relative w-full max-w-sm">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
+            <div class="relative w-[240px]">
               <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
                 type="search"
-                placeholder="Search by name, phone, or #client number"
+                placeholder="Search name / phone / #id"
                 value={searchInput.value}
                 onInput={(e: Event) =>
                   (searchInput.value = (e.target as HTMLInputElement).value)
                 }
-                class="h-9 w-full pl-9 pr-3 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                class="h-7 w-full pl-8 pr-2 rounded-md border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
@@ -239,56 +253,75 @@ export default defineComponent({
               })}
             </div>
 
-            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>When</span>
-              <input
-                aria-label="From date"
-                type="date"
-                value={dateFrom.value}
-                onInput={(e: Event) =>
-                  (dateFrom.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-7 w-[140px] rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <span>→</span>
-              <input
-                aria-label="To date"
-                type="date"
-                value={dateTo.value}
-                onInput={(e: Event) =>
-                  (dateTo.value = (e.target as HTMLInputElement).value)
-                }
-                class="h-7 w-[140px] rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            {(doctors.value?.length ?? 0) > 0 && (
+              <div class="flex items-center gap-1.5">
+                {(doctors.value ?? []).map((d) => {
+                  const active = doctorIds.value.includes(d.user_id)
+                  return (
+                    <button
+                      key={d.user_id}
+                      type="button"
+                      onClick={() => toggleDoctor(d.user_id)}
+                      class={[
+                        'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                        active
+                          ? 'bg-accent text-accent-foreground border-transparent'
+                          : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                      ].join(' ')}
+                      title={`Filter by ${d.display_name}`}
+                    >
+                      {d.display_name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">
+              <div class="w-[120px]">
+                <DatePicker
+                  modelValue={dateFrom.value}
+                  onUpdate:modelValue={(v: string) => (dateFrom.value = v)}
+                  placeholder="From"
+                  size="sm"
+                />
+              </div>
+              <span class="opacity-60">→</span>
+              <div class="w-[120px]">
+                <DatePicker
+                  modelValue={dateTo.value}
+                  onUpdate:modelValue={(v: string) => (dateTo.value = v)}
+                  placeholder="To"
+                  size="sm"
+                />
+              </div>
             </div>
 
-            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>Sort</span>
-              <select
-                aria-label="Sort appointments by"
-                value={sortBy.value}
-                onChange={(e: Event) =>
-                  (sortBy.value = (e.target as HTMLSelectElement)
-                    .value as AppointmentsSortBy)
-                }
-                class="h-7 rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              aria-label="Sort appointments by"
+              value={sortBy.value}
+              onChange={(e: Event) =>
+                (sortBy.value = (e.target as HTMLSelectElement)
+                  .value as AppointmentsSortBy)
+              }
+              class="h-7 rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
 
             {hasNonDefaultFilter.value && (
               <button
                 type="button"
                 onClick={resetFilters}
-                class="inline-flex items-center gap-1 px-2 h-7 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                class="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Reset filters to today"
+                aria-label="Reset filters"
               >
-                <X class="size-3" />
-                <span>Reset to today</span>
+                <X class="size-3.5" />
               </button>
             )}
           </div>

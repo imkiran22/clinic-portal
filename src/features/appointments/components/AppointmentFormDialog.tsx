@@ -9,11 +9,12 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import Modal from '@/components/shared/Modal'
 import { TextField } from '@/components/shared/FormField'
+import DateTimePicker from '@/components/shared/DateTimePicker'
 import PatientPicker from '@/features/patients/components/PatientPicker'
 import {
   appointmentFormSchema,
   emptyAppointmentForm,
-  splitToLocalParts,
+  nextHalfHour,
   toAppointmentInput,
   type AppointmentFormValues,
 } from '../validations'
@@ -23,6 +24,8 @@ import {
 } from '../composables/useAppointmentMutations'
 import type { Appointment } from '../types'
 import type { Patient } from '@/features/patients/types'
+import DoctorPicker from '@/features/auth/components/DoctorPicker'
+import type { Profile } from '@/features/auth/services/authService'
 
 export default defineComponent({
   name: 'AppointmentFormDialog',
@@ -45,10 +48,7 @@ export default defineComponent({
 
     const initialValues = computed<AppointmentFormValues>(() => {
       if (props.appointment) {
-        const parts = splitToLocalParts(props.appointment.scheduled_at)
         return {
-          scheduled_date: parts.date,
-          scheduled_time: parts.time,
           treatment_description: props.appointment.treatment_description,
           session_number:
             props.appointment.session_number === null
@@ -70,12 +70,43 @@ export default defineComponent({
     )
     const patientError = ref<string | null>(null)
 
+    // VueDatePicker is bound to a Date | null. Defaults: existing
+    // timestamp when editing; "today, next half-hour" when creating —
+    // staff usually just tweak the hour and submit.
+    const initialDate = (): Date | null =>
+      props.appointment ? new Date(props.appointment.scheduled_at) : nextHalfHour()
+    const scheduledAt = ref<Date | null>(initialDate())
+    const scheduledAtError = ref<string | null>(null)
+    watch(scheduledAt, (v) => {
+      if (v) scheduledAtError.value = null
+    })
+
+    // Assigned doctor lives outside the Zod schema (the picker is a
+    // standalone combobox). We deliberately do NOT pre-fill on create:
+    // most WhatsApp bookings are "any doctor today", and pre-selecting
+    // the logged-in user (often an admin or receptionist filling in for
+    // the doctor) misrepresents the schedule. Edit mode keeps the
+    // existing assignment from the row.
+    const initialDoctor = (): Profile | null => {
+      if (props.appointment && props.appointment.assigned_doctor) {
+        return props.appointment.assigned_doctor as Profile
+      }
+      return null
+    }
+    const assignedDoctor = ref<Profile | null>(initialDoctor())
+
     watch(
       () => props.appointment,
       (next) => {
         patient.value = next?.patient
           ? (next.patient as unknown as Patient)
           : (props.lockedPatient ?? null)
+        assignedDoctor.value = next
+          ? next.assigned_doctor
+            ? (next.assigned_doctor as Profile)
+            : null
+          : initialDoctor()
+        scheduledAt.value = initialDate()
       },
     )
     watch(patient, (v) => {
@@ -99,7 +130,10 @@ export default defineComponent({
             (props.appointment?.patient
               ? (props.appointment.patient as unknown as Patient)
               : null)
+          assignedDoctor.value = initialDoctor()
+          scheduledAt.value = initialDate()
           patientError.value = null
+          scheduledAtError.value = null
         }
       },
     )
@@ -111,12 +145,23 @@ export default defineComponent({
     )
 
     const submit = handleSubmit(async (values) => {
+      let ok = true
       if (!patient.value) {
         patientError.value = 'Patient is required'
-        return
+        ok = false
       }
+      if (!scheduledAt.value) {
+        scheduledAtError.value = 'Date & time required'
+        ok = false
+      }
+      if (!ok) return
       try {
-        const input = toAppointmentInput(values, patient.value.id)
+        const input = toAppointmentInput(
+          values,
+          patient.value!.id,
+          scheduledAt.value!,
+          assignedDoctor.value?.user_id ?? null,
+        )
         if (props.appointment) {
           await updateMut.mutateAsync({
             id: props.appointment.id,
@@ -137,6 +182,7 @@ export default defineComponent({
         open={props.open}
         title={isEdit.value ? 'Edit appointment' : 'New appointment'}
         size="max-w-lg"
+        dismissOnBackdrop={false}
         onUpdate:open={(v: boolean) => emit('update:open', v)}
       >
         <form
@@ -175,19 +221,39 @@ export default defineComponent({
             )}
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <TextField
-              name="scheduled_date"
-              label="Date"
-              type="date"
-              required
-            />
-            <TextField
-              name="scheduled_time"
-              label="Time"
-              type="time"
-              required
-            />
+          <div>
+            <label class="text-sm font-medium">
+              Date &amp; time <span class="text-destructive ml-0.5">*</span>
+            </label>
+            <div class="mt-1">
+              <DateTimePicker
+                modelValue={scheduledAt.value}
+                onUpdate:modelValue={(d: Date | null) =>
+                  (scheduledAt.value = d)
+                }
+              />
+            </div>
+            {scheduledAtError.value && (
+              <p class="mt-1 text-xs text-destructive">
+                {scheduledAtError.value}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label class="text-sm font-medium">Doctor</label>
+            <div class="mt-1">
+              <DoctorPicker
+                modelValue={assignedDoctor.value}
+                onUpdate:modelValue={(d: Profile | null) =>
+                  (assignedDoctor.value = d)
+                }
+              />
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">
+              Optional — leave empty for "any doctor", or pick when the
+              patient has asked for one.
+            </p>
           </div>
 
           <TextField
