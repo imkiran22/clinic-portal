@@ -133,123 +133,97 @@ export default defineComponent({
             </button>
           </div>
 
-          <div class="relative max-w-md">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search by name, phone, or client #"
-              value={searchInput.value}
-              onInput={(e: Event) => (searchInput.value = (e.target as HTMLInputElement).value)}
-              class="w-full pl-9 pr-3 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-
-          {/* Filter bar — gender chips + date-added range + sort.
-              Same shape as the /sales filter card so the page feels
-              consistent. */}
-          <div class="rounded-md border border-border bg-card p-3 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="text-xs uppercase tracking-wide text-muted-foreground">
-                Filters
-              </div>
-              {hasAnyFilter.value && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-                >
-                  <X class="size-3" />
-                  <span>Clear</span>
-                </button>
-              )}
+          {/* Search + filters compacted into a single inline row.
+              No card chrome — labels are inline, controls share the
+              same row, and the row only grows vertically when there
+              isn't enough horizontal space. */}
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <div class="relative w-full max-w-sm">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input
+                type="search"
+                placeholder="Search by name, phone, or client #"
+                value={searchInput.value}
+                onInput={(e: Event) =>
+                  (searchInput.value = (e.target as HTMLInputElement).value)
+                }
+                class="h-9 w-full pl-9 pr-3 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
 
-            <div class="flex flex-wrap items-end gap-3">
-              <div>
-                <div class="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                  Gender
-                </div>
-                <div class="flex flex-wrap gap-1.5">
-                  {GENDER_OPTIONS.map((g) => {
-                    const active = genders.value.includes(g.value)
-                    return (
-                      <button
-                        key={g.value}
-                        type="button"
-                        onClick={() => toggleGender(g.value)}
-                        class={[
-                          'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
-                          active
-                            ? 'bg-accent text-accent-foreground border-transparent'
-                            : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
-                        ].join(' ')}
-                      >
-                        {g.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  class="text-xs uppercase tracking-wide text-muted-foreground block mb-1"
-                  for="patient-from"
-                >
-                  Added from
-                </label>
-                <input
-                  id="patient-from"
-                  type="date"
-                  value={dateFrom.value}
-                  onInput={(e: Event) =>
-                    (dateFrom.value = (e.target as HTMLInputElement).value)
-                  }
-                  class="h-[34px] w-[160px] rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div>
-                <label
-                  class="text-xs uppercase tracking-wide text-muted-foreground block mb-1"
-                  for="patient-to"
-                >
-                  to
-                </label>
-                <input
-                  id="patient-to"
-                  type="date"
-                  value={dateTo.value}
-                  onInput={(e: Event) =>
-                    (dateTo.value = (e.target as HTMLInputElement).value)
-                  }
-                  class="h-[34px] w-[160px] rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-
-              <div class="ml-auto">
-                <label
-                  class="text-xs uppercase tracking-wide text-muted-foreground block mb-1"
-                  for="patient-sort"
-                >
-                  Sort by
-                </label>
-                <select
-                  id="patient-sort"
-                  value={sortBy.value}
-                  onChange={(e: Event) =>
-                    (sortBy.value = (e.target as HTMLSelectElement)
-                      .value as PatientsSortBy)
-                  }
-                  class="h-[34px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div class="flex items-center gap-1.5">
+              {GENDER_OPTIONS.map((g) => {
+                const active = genders.value.includes(g.value)
+                return (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => toggleGender(g.value)}
+                    class={[
+                      'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                      active
+                        ? 'bg-accent text-accent-foreground border-transparent'
+                        : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                    ].join(' ')}
+                  >
+                    {g.label}
+                  </button>
+                )
+              })}
             </div>
+
+            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Added</span>
+              <input
+                aria-label="Added from"
+                type="date"
+                value={dateFrom.value}
+                onInput={(e: Event) =>
+                  (dateFrom.value = (e.target as HTMLInputElement).value)
+                }
+                class="h-7 w-[140px] rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span>→</span>
+              <input
+                aria-label="Added to"
+                type="date"
+                value={dateTo.value}
+                onInput={(e: Event) =>
+                  (dateTo.value = (e.target as HTMLInputElement).value)
+                }
+                class="h-7 w-[140px] rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Sort</span>
+              <select
+                aria-label="Sort patients by"
+                value={sortBy.value}
+                onChange={(e: Event) =>
+                  (sortBy.value = (e.target as HTMLSelectElement)
+                    .value as PatientsSortBy)
+                }
+                class="h-7 rounded-md border border-border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {hasAnyFilter.value && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                class="inline-flex items-center gap-1 px-2 h-7 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <X class="size-3" />
+                <span>Clear</span>
+              </button>
+            )}
           </div>
 
           {isError.value && (
