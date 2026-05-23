@@ -13,6 +13,7 @@ import {
   LogOut,
   Lock,
   Wrench,
+  CalendarClock,
   CircleHelp,
 } from 'lucide-vue-next'
 import { useCan } from '@/features/auth/composables/useCan'
@@ -88,6 +89,7 @@ const ALL_SECTIONS: TocEntry[] = [
   { id: 'inventory', label: 'Inventory' },
   { id: 'categories', label: 'Categories', privileged: true },
   { id: 'suppliers', label: 'Suppliers', privileged: true },
+  { id: 'appointments', label: 'Appointments' },
   { id: 'visits', label: 'Visits & prescriptions' },
   { id: 'sales', label: 'Sales' },
   { id: 'movements', label: 'Stock movements' },
@@ -567,6 +569,98 @@ export default defineComponent({
             </Section>
           )}
 
+          <Section id="appointments" title="Appointments">
+            <p class="flex items-start gap-2">
+              <CalendarClock class="size-4 mt-0.5 text-muted-foreground shrink-0" />
+              <span>
+                The portal version of the paper diary. Each row is one
+                booking — patient, scheduled date + time, treatment,
+                optional session number, status. Bookings still come in
+                via WhatsApp / phone; this is where staff log them so
+                everyone can see today's roster without waiting for the
+                photo.
+              </span>
+            </p>
+
+            <h3 class="text-base font-medium pt-2">Appointments vs Visits</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Appointment</strong> = the expectation. "We expect
+                Asha at 11 AM for her 3rd laser session." Created when the
+                patient books.
+              </li>
+              <li>
+                <strong>Visit</strong> = the clinical encounter that
+                actually happened. Notes, treatment delivered, any
+                products dispensed.
+              </li>
+              <li>
+                When the patient arrives and is seen, the appointment
+                converts into a visit — one click links them.
+              </li>
+            </ul>
+
+            <h3 class="text-base font-medium pt-2">Create an appointment</h3>
+            <ol class="list-decimal pl-5 space-y-1">
+              <li>
+                Open <strong>Appointments</strong> from the sidebar (page
+                lands on today's scheduled list).
+              </li>
+              <li>
+                Click{' '}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-xs">
+                  <Plus class="size-3" /> New appointment
+                </span>
+                .
+              </li>
+              <li>
+                Pick the patient, set the date + time, write a short
+                treatment description ("GFC", "Laser with peel", "DPN
+                removal"), optionally the session number.
+              </li>
+              <li>Save. Row appears in the list with status Scheduled.</li>
+            </ol>
+
+            <h3 class="text-base font-medium pt-2">Status flow</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Scheduled</strong> (default) — booked, not yet
+                resolved.
+              </li>
+              <li>
+                <strong>Done</strong> — the patient came and was seen.
+                Set by clicking the check icon, which opens the New Visit
+                form pre-filled with the patient and treatment. Saving
+                that visit marks the appointment Done and links the two.
+              </li>
+              <li>
+                <strong>Cancelled</strong> — the patient didn't come or
+                cancelled. Use the slash icon. A small dialog prompts for
+                a reason ("Out of station", "Patient declined", etc.) —
+                cheap to write, useful for audit.
+              </li>
+              <li>
+                A cancelled appointment can be restored to Scheduled via
+                the circular-arrow icon if it was a mistake.
+              </li>
+            </ul>
+
+            <h3 class="text-base font-medium pt-2">Today's appointments on the dashboard</h3>
+            <p>
+              The leftmost dashboard card shows the day's scheduled
+              roster — count, names, times — at a glance. Click any row
+              to open the full Appointments page filtered to today.
+            </p>
+
+            <Note kind="info">
+              No reminders or capacity / time-slot enforcement in this
+              version — two appointments at the same time is allowed
+              (multiple doctors). If staff start asking for slot
+              management or auto-reminders, we'll layer those on after
+              real-usage feedback.
+            </Note>
+          </Section>
+
           <Section id="visits" title="Visits & prescriptions">
             <p>
               A <strong>visit</strong> is one clinical encounter — notes,
@@ -739,6 +833,8 @@ export default defineComponent({
                     ['Create / edit / delete products', '✓', '—'],
                     ['Manage product categories', '✓', '—'],
                     ['Manage product suppliers', '✓', '—'],
+                    ['Create / edit / change appointment status', '✓', '✓'],
+                    ['Soft-delete an appointment', '✓', '—'],
                     ['Record stock movements (Purchase / Adjustment / Damage / Expired)', '✓', '✓'],
                     ['Sell product standalone', '✓', '✓'],
                     ['Create visit with prescriptions', '✓', '—'],

@@ -1,16 +1,19 @@
 import { defineComponent, onMounted, reactive, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft } from 'lucide-vue-next'
+import { ArrowLeft, CalendarClock } from 'lucide-vue-next'
 import PatientPicker from '@/features/patients/components/PatientPicker'
 import PrescriptionLines, {
   type PrescriptionLine,
 } from '@/features/visits/components/PrescriptionLines'
 import { useCreateVisit } from '@/features/visits/composables/useVisitMutations'
 import { patientService } from '@/features/patients/services/patientService'
+import { appointmentService } from '@/features/appointments/services/appointmentService'
+import { useSetAppointmentStatus } from '@/features/appointments/composables/useAppointmentMutations'
 import { supabase } from '@/lib/supabase'
 import { useCan } from '@/features/auth/composables/useCan'
 import { useAuth } from '@/features/auth/composables/useAuth'
 import type { Patient } from '@/features/patients/types'
+import type { Appointment } from '@/features/appointments/types'
 
 type FormState = {
   patient: Patient | null
@@ -31,8 +34,14 @@ export default defineComponent({
     const route = useRoute()
     const router = useRouter()
     const createMut = useCreateVisit()
+    const setApptStatusMut = useSetAppointmentStatus()
     const { canCreateVisit } = useCan()
     const { ready } = useAuth()
+
+    // Optional context — set when arriving from an appointment row.
+    // On successful visit save we mark the appointment 'done' and store
+    // the visit id on it so the audit trail links both ways.
+    const linkedAppointment = ref<Appointment | null>(null)
 
     // Direct URL access guard — limited users typing /visits/new bounce home.
     // Wait for auth to resolve before deciding; otherwise we'd redirect during
@@ -54,10 +63,32 @@ export default defineComponent({
     const formError = ref<string | null>(null)
     const lineErrors = ref<(string | null)[]>([])
 
-    // Optional ?patient_id=... — pre-select the patient. Accepts either a
-    // UUID (used by the "New visit" button on PatientDetailView) or a numeric
-    // legacy_client_no so the URL is friendly to type/share.
+    // Optional deep-link query params:
+    //   ?patient_id=...    — pre-select a patient (UUID or legacy_client_no)
+    //   ?appointment_id=...— came from an appointment row; pre-fill patient
+    //                        + treatment_details and remember the link so
+    //                        we can mark the appointment done on save.
     onMounted(async () => {
+      const apptId = route.query.appointment_id
+      if (typeof apptId === 'string' && apptId) {
+        try {
+          const a = await appointmentService.get(supabase, apptId)
+          if (a) {
+            linkedAppointment.value = a
+            if (a.patient) {
+              state.patient = a.patient as unknown as Patient
+            }
+            const sessionSuffix =
+              a.session_number !== null ? ` (session #${a.session_number})` : ''
+            state.treatment_details = a.treatment_description + sessionSuffix
+            // Done — no need to fall through to the patient-only fetch.
+            return
+          }
+        } catch {
+          /* ignore — show the form unlinked */
+        }
+      }
+
       const pid = route.query.patient_id
       if (typeof pid !== 'string' || !pid) return
       try {
@@ -121,7 +152,7 @@ export default defineComponent({
       if (!validate()) return
 
       try {
-        await createMut.mutateAsync({
+        const visit = await createMut.mutateAsync({
           patient_id: state.patient!.id,
           doctor_notes: trimOrNull(state.doctor_notes),
           treatment_details: trimOrNull(state.treatment_details),
@@ -131,7 +162,25 @@ export default defineComponent({
             quantity: Number(l.quantity),
           })),
         })
-        router.push({ name: 'visits' })
+
+        // If we arrived from an appointment, mark it done with the
+        // visit linked. Fire-and-forget: if this fails the visit
+        // still exists and staff can mark the appointment manually.
+        if (linkedAppointment.value) {
+          try {
+            await setApptStatusMut.mutateAsync({
+              id: linkedAppointment.value.id,
+              status: 'done',
+              visit_id: visit.id,
+              toastMessage: 'Appointment marked done',
+            })
+          } catch {
+            // toast surfaced by mutation
+          }
+          router.push({ name: 'appointments' })
+        } else {
+          router.push({ name: 'visits' })
+        }
       } catch {
         // toast surfaced by mutation; RPC raises name the failing line
       }
@@ -155,6 +204,27 @@ export default defineComponent({
             line is short on stock, the whole visit rolls back.
           </p>
         </div>
+
+        {linkedAppointment.value && (
+          <div class="rounded-md border border-sky-500/40 bg-sky-500/5 px-3 py-2 text-sm flex items-start gap-2 text-sky-900 dark:text-sky-200">
+            <CalendarClock class="size-4 mt-0.5 shrink-0" />
+            <div>
+              <strong>Linked to appointment</strong> for{' '}
+              {linkedAppointment.value.patient?.name ?? 'patient'}
+              {linkedAppointment.value.patient?.legacy_client_no && (
+                <span class="ml-1 text-xs tabular-nums opacity-80">
+                  #{linkedAppointment.value.patient.legacy_client_no}
+                </span>
+              )}
+              <span class="text-muted-foreground">
+                {' '}· {new Date(linkedAppointment.value.scheduled_at).toLocaleString()}
+              </span>
+              <div class="text-xs opacity-80 mt-0.5">
+                Saving this visit will mark the appointment as done.
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={onSubmit} class="space-y-5" novalidate>
           <div>
