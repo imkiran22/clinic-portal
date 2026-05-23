@@ -1,6 +1,6 @@
-import { defineComponent, onMounted, reactive, ref, watchEffect } from 'vue'
+import { defineComponent, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, CalendarClock } from 'lucide-vue-next'
+import { ArrowLeft, CalendarClock, Link2 } from 'lucide-vue-next'
 import PatientPicker from '@/features/patients/components/PatientPicker'
 import PrescriptionLines, {
   type PrescriptionLine,
@@ -45,6 +45,13 @@ export default defineComponent({
     // the visit id on it so the audit trail links both ways.
     const linkedAppointment = ref<Appointment | null>(null)
 
+    // When a doctor picks a patient who has scheduled appointments
+    // today (and we don't already have a link from ?appointment_id),
+    // surface a "Link to existing appointment?" banner. Explicit click
+    // — never silent — so two patients with the same first name don't
+    // merge into someone else's slot.
+    const suggestedAppointments = ref<Appointment[]>([])
+
     // Direct URL access guard — limited users typing /visits/new bounce home.
     // Wait for auth to resolve before deciding; otherwise we'd redirect during
     // the initial render when role is still unknown.
@@ -64,6 +71,44 @@ export default defineComponent({
 
     const formError = ref<string | null>(null)
     const lineErrors = ref<(string | null)[]>([])
+
+    // Re-query today's scheduled appointments whenever the selected
+    // patient changes. Skip when the visit is already linked (came in
+    // via ?appointment_id) — we know which one it is in that case.
+    watch(
+      () => state.patient?.id ?? null,
+      async (patientId) => {
+        if (!patientId || linkedAppointment.value) {
+          suggestedAppointments.value = []
+          return
+        }
+        try {
+          suggestedAppointments.value =
+            await appointmentService.listScheduledForPatientToday(
+              supabase,
+              patientId,
+            )
+        } catch {
+          // Silent fallback — the banner is a convenience, not a
+          // blocker. Doctor can still save and manually mark the
+          // appointment done later.
+          suggestedAppointments.value = []
+        }
+      },
+      { immediate: false },
+    )
+
+    // Linking from the banner: pull treatment context across so the
+    // form mirrors the regular Mark-done flow.
+    const linkSuggested = (a: Appointment) => {
+      linkedAppointment.value = a
+      suggestedAppointments.value = []
+      if (!state.treatment_details.trim()) {
+        const sessionSuffix =
+          a.session_number !== null ? ` (session #${a.session_number})` : ''
+        state.treatment_details = a.treatment_description + sessionSuffix
+      }
+    }
 
     // Optional deep-link query params:
     //   ?patient_id=...    — pre-select a patient (UUID or legacy_client_no)
@@ -224,6 +269,43 @@ export default defineComponent({
               <div class="text-xs opacity-80 mt-0.5">
                 Saving this visit will mark the appointment as done.
               </div>
+            </div>
+          </div>
+        )}
+
+        {!linkedAppointment.value && suggestedAppointments.value.length > 0 && (
+          <div class="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm space-y-2 text-amber-900 dark:text-amber-200">
+            <div class="flex items-start gap-2">
+              <CalendarClock class="size-4 mt-0.5 shrink-0" />
+              <div class="flex-1">
+                <strong>
+                  {suggestedAppointments.value.length === 1
+                    ? 'This patient has a scheduled appointment today.'
+                    : `This patient has ${suggestedAppointments.value.length} scheduled appointments today.`}
+                </strong>
+                <div class="text-xs opacity-80 mt-0.5">
+                  Link it so saving this visit also marks the appointment Done.
+                  Otherwise it'll stay Scheduled.
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pl-6">
+              {suggestedAppointments.value.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => linkSuggested(a)}
+                  class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-xs font-medium"
+                >
+                  <Link2 class="size-3.5" />
+                  <span>
+                    {formatDateTime(a.scheduled_at)} · {a.treatment_description}
+                    {a.session_number !== null
+                      ? ` (#${a.session_number})`
+                      : ''}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         )}

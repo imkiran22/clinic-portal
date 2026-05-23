@@ -185,6 +185,35 @@ export const appointmentService = {
     }
   },
 
+  /**
+   * Scheduled appointments for this patient today. Used by NewVisitView
+   * to surface a "Link to existing appointment?" banner when a doctor
+   * lands on the visit form for a patient who's also on the day's roster
+   * — closes the gap where walk-in flow leaves the appointment stuck on
+   * Scheduled. Returns soonest-first.
+   */
+  async listScheduledForPatientToday(
+    sb: AppSupabaseClient,
+    patientId: string,
+  ): Promise<Appointment[]> {
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const day = `${yyyy}-${mm}-${dd}`
+
+    const { data, error } = await sb
+      .from('appointments_active')
+      .select(SELECT_WITH_PATIENT)
+      .eq('patient_id', patientId)
+      .eq('status', 'scheduled')
+      .gte('scheduled_at', startOfLocalDayIso(day))
+      .lte('scheduled_at', endOfLocalDayIso(day))
+      .order('scheduled_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []) as unknown as Appointment[]
+  },
+
   async get(
     sb: AppSupabaseClient,
     id: string,
