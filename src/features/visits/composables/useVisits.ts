@@ -3,14 +3,18 @@ import { computed, type Ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { visitService } from '../services/visitService'
 import { visitKeys } from '../queryKeys'
+import type { VisitsFilter } from '../types'
 
 export const VISITS_PAGE_SIZE = 50
 
-export function useVisits(page: Ref<number>) {
+export function useVisits(filter: Ref<VisitsFilter>, page: Ref<number>) {
   return useQuery({
-    queryKey: computed(() => visitKeys.list({ page: page.value })),
+    queryKey: computed(() =>
+      visitKeys.list({ filter: filter.value, page: page.value }),
+    ),
     queryFn: () =>
       visitService.list(supabase, {
+        ...filter.value,
         page: page.value,
         pageSize: VISITS_PAGE_SIZE,
       }),

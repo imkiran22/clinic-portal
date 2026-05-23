@@ -1,26 +1,99 @@
 import type { AppSupabaseClient } from '@/lib/supabase'
 import type { StockMovement } from '@/features/inventory/types'
-import type { Visit, VisitCreateInput } from '../types'
+import type { Visit, VisitCreateInput, VisitsFilter } from '../types'
 
 export type VisitListResult = { rows: Visit[]; total: number }
 
 const VISIT_SELECT_WITH_PATIENT =
   '*, patient:patients(id, name, legacy_client_no)'
 
+function startOfLocalDayIso(ymd: string): string {
+  return new Date(ymd + 'T00:00:00').toISOString()
+}
+function endOfLocalDayIso(ymd: string): string {
+  const d = new Date(ymd + 'T00:00:00')
+  d.setHours(23, 59, 59, 999)
+  return d.toISOString()
+}
+
+/**
+ * Resolve a patient search to ids — same syntax as appointmentService.
+ * PostgREST can't OR across a joined column cleanly, so we run the
+ * patient lookup separately and feed the ids back as `in('patient_id')`.
+ */
+async function resolvePatientIds(
+  sb: AppSupabaseClient,
+  search: string,
+): Promise<string[] | null> {
+  const s = search.trim()
+  if (!s) return null
+  const PG_INT4_MAX = 2_147_483_647
+  let q = sb.from('patients_active').select('id').limit(500)
+  if (s.startsWith('#')) {
+    const numStr = s.slice(1).trim()
+    if (!/^\d+$/.test(numStr)) return []
+    const n = Number(numStr)
+    if (!Number.isFinite(n) || n < 1 || n > PG_INT4_MAX) return []
+    q = q.eq('legacy_client_no', n)
+  } else if (/^\d+$/.test(s)) {
+    const clauses = [`name.ilike.%${s}%`, `phone.ilike.%${s}%`]
+    const n = Number(s)
+    if (Number.isFinite(n) && n >= 1 && n <= PG_INT4_MAX) {
+      clauses.push(`legacy_client_no.eq.${n}`)
+    }
+    q = q.or(clauses.join(','))
+  } else {
+    q = q.ilike('name', `%${s}%`)
+  }
+  const { data, error } = await q
+  if (error) throw error
+  return (data ?? []).map((r) => r.id as string)
+}
+
 export const visitService = {
   async list(
     sb: AppSupabaseClient,
-    args: { page: number; pageSize: number },
+    args: VisitsFilter & { page: number; pageSize: number },
   ): Promise<VisitListResult> {
-    const { page, pageSize } = args
+    const {
+      patientSearch,
+      dateFrom,
+      dateTo,
+      patientIds: pickedPatientIds,
+      page,
+      pageSize,
+    } = args
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
 
-    const { data, error, count } = await sb
+    // Combine the free-text patient search with the multi-pick. If
+    // search returns zero matches we can short-circuit; if both are
+    // populated we intersect.
+    let patientIds: string[] | null = null
+    if (patientSearch && patientSearch.trim()) {
+      patientIds = await resolvePatientIds(sb, patientSearch)
+      if (patientIds && patientIds.length === 0) {
+        return { rows: [], total: 0 }
+      }
+    }
+    if (pickedPatientIds && pickedPatientIds.length > 0) {
+      patientIds = patientIds
+        ? patientIds.filter((id) => pickedPatientIds.includes(id))
+        : pickedPatientIds.slice()
+      if (patientIds.length === 0) return { rows: [], total: 0 }
+    }
+
+    let q = sb
       .from('visits')
       .select(VISIT_SELECT_WITH_PATIENT, { count: 'exact' })
       .order('visit_date', { ascending: false })
       .range(from, to)
+
+    if (dateFrom) q = q.gte('visit_date', startOfLocalDayIso(dateFrom))
+    if (dateTo) q = q.lte('visit_date', endOfLocalDayIso(dateTo))
+    if (patientIds) q = q.in('patient_id', patientIds)
+
+    const { data, error, count } = await q
     if (error) throw error
     return { rows: (data ?? []) as unknown as Visit[], total: count ?? 0 }
   },

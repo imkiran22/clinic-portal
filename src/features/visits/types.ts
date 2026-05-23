@@ -26,3 +26,16 @@ export type VisitCreateInput = {
   followup_date: string | null
   prescribed_products: PrescribedProduct[]
 }
+
+export type VisitsFilter = {
+  // Free-text patient search. Mirrors AppointmentsView's syntax —
+  //   #1297 → legacy_client_no = 1297 only
+  //   1297  → name / phone substring / legacy_client_no
+  //   asha  → name substring
+  patientSearch?: string
+  // YYYY-MM-DD calendar days. null = no bound.
+  dateFrom?: string | null
+  dateTo?: string | null
+  // Multi-patient pick from the More-filters modal. Empty = no filter.
+  patientIds?: string[]
+}
