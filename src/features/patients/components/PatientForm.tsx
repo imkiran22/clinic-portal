@@ -59,7 +59,8 @@ export default defineComponent({
           <TextField
             name="legacy_client_no"
             label="Client #"
-            placeholder="Auto-assigned if blank"
+            required
+            placeholder="Next number from your register"
           />
         </div>
         <TextField name="address" label="Address" />

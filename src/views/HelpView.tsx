@@ -272,13 +272,18 @@ export default defineComponent({
                 at the top right. <em>(Available to all roles.)</em>
               </li>
               <li>
-                Fill in <strong>name</strong> and <strong>phone</strong> at
-                minimum. Age, gender, email, address, notes are optional.
+                Fill in <strong>name</strong>, <strong>phone</strong>, and{' '}
+                <strong>Client #</strong> at minimum. Age, gender, email,
+                address, notes are optional.
               </li>
               <li>
-                The <strong>Client #</strong> auto-fills if you leave it
-                blank — the next number in sequence. You can override it
-                only when adding (not editing).
+                <strong>Client #</strong> is the number from your paper
+                register — staff own this and type it in explicitly.
+                If you reuse a number that already belongs to another
+                patient, the form rejects it with{' '}
+                <em>"That Client # is already in use — pick a different
+                number."</em>{' '}
+                so the paper register and the portal stay in lockstep.
               </li>
               <li>Click <strong>Save</strong>.</li>
             </ol>

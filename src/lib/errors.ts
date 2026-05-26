@@ -7,7 +7,16 @@ export function toUserError(e: unknown): string {
 
   if (code === 'P0001') return msg || 'Operation failed.'
   if (code === 'P0002') return 'Record not found.'
-  if (code === '23505') return 'Duplicate value — that record already exists.'
+  if (code === '23505') {
+    // The legacy_client_no unique index is the one staff hit most often
+    // — they pick a number from their paper register and it's already
+    // in use. Surface a clear, actionable message instead of the
+    // generic "duplicate value".
+    if (msg.includes('legacy_client_no')) {
+      return 'That Client # is already in use — pick a different number.'
+    }
+    return 'Duplicate value — that record already exists.'
+  }
   if (code === '23503') return 'Cannot delete — this record is referenced elsewhere.'
   if (code === '22023') return msg || 'Invalid input.'
   if (code === '42501') return 'Not authorized to perform this action.'

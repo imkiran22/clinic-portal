@@ -21,10 +21,16 @@ export const patientFormSchema = z.object({
     .refine((v) => v === '' || z.string().email().safeParse(v).success, 'Invalid email'),
   address: z.string(),
   notes: z.string(),
+  // Required — staff own the numbering by hand. Earlier we let the
+  // database auto-assign blanks via a trigger, but that created
+  // discrepancies whenever a staff member typed the next number from
+  // their paper register and the DB had silently picked a different
+  // one. Now the field is explicit; the DB just enforces uniqueness.
   legacy_client_no: z
     .string()
-    .regex(/^$|^\d+$/, 'Numbers only')
-    .refine((v) => v === '' || Number(v) >= 1, 'Must be positive'),
+    .min(1, 'Client # is required')
+    .regex(/^\d+$/, 'Numbers only')
+    .refine((v) => Number(v) >= 1, 'Must be positive'),
 })
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>
@@ -49,7 +55,8 @@ export function toPatientInput(values: PatientFormValues): PatientInput {
     email: values.email.trim() === '' ? null : values.email.trim(),
     address: values.address.trim() === '' ? null : values.address.trim(),
     notes: values.notes.trim() === '' ? null : values.notes.trim(),
-    legacy_client_no: values.legacy_client_no === '' ? null : Number(values.legacy_client_no),
+    // Schema guarantees non-empty + numeric by this point.
+    legacy_client_no: Number(values.legacy_client_no),
   }
 }
 
