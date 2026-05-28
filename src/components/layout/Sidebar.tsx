@@ -64,10 +64,22 @@ export default defineComponent({
             props.open ? 'translate-x-0' : '-translate-x-full',
           )}
         >
-          <div class="flex items-center justify-between mb-6">
-            <div class="font-semibold tracking-tight">Clinic Portal</div>
+          <div class="flex items-start justify-between mb-6 gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <img
+                src="/logo.webp"
+                alt="Define Skin Hair & Laser Clinic"
+                class="size-9 rounded-md shrink-0 object-contain bg-black"
+              />
+              <div class="font-semibold tracking-tight text-sm leading-tight min-w-0">
+                <div class="truncate">Define</div>
+                <div class="text-xs font-normal text-muted-foreground truncate">
+                  Skin · Hair · Laser
+                </div>
+              </div>
+            </div>
             <button
-              class="md:hidden p-1 rounded hover:bg-accent"
+              class="md:hidden p-1 rounded hover:bg-accent shrink-0"
               onClick={() => props.onClose()}
               aria-label="Close sidebar"
             >

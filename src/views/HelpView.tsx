@@ -139,7 +139,7 @@ export default defineComponent({
               <span>Help & user guide</span>
             </div>
             <h1 class="text-3xl font-semibold tracking-tight">
-              How to use the Clinic Portal
+              How to use the Define Skin Hair &amp; Laser Clinic portal
             </h1>
             <p class="text-sm text-muted-foreground">
               A walkthrough for daily clinic operations — patients, inventory,

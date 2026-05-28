@@ -61,8 +61,15 @@ export default defineComponent({
           class="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm space-y-5"
           novalidate
         >
-          <div>
-            <h1 class="text-xl font-semibold tracking-tight">Clinic Portal</h1>
+          <div class="flex flex-col items-center text-center">
+            <img
+              src="/logo.webp"
+              alt="Define Skin Hair & Laser Clinic"
+              class="size-16 rounded-lg object-contain bg-black mb-3"
+            />
+            <h1 class="text-lg font-semibold tracking-tight leading-tight">
+              Define Skin Hair &amp; Laser Clinic
+            </h1>
             <p class="text-sm text-muted-foreground mt-1">Sign in to continue.</p>
           </div>
 
