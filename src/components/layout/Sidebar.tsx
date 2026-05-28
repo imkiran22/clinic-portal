@@ -72,10 +72,7 @@ export default defineComponent({
                 class="size-9 rounded-md shrink-0 object-contain bg-black"
               />
               <div class="font-semibold tracking-tight text-sm leading-tight min-w-0">
-                <div class="truncate">Define</div>
-                <div class="text-xs font-normal text-muted-foreground truncate">
-                  Skin · Hair · Laser
-                </div>
+                Define Skin Hair &amp; Laser Clinic
               </div>
             </div>
             <button
