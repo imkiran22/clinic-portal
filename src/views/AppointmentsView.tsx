@@ -326,7 +326,7 @@ export default defineComponent({
                     type="button"
                     onClick={() => setRange(r.value)}
                     class={[
-                      'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                      'h-7 px-3 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
                       active
                         ? 'bg-accent text-accent-foreground border-transparent'
                         : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -483,7 +483,7 @@ export default defineComponent({
                       type="button"
                       onClick={() => toggleStatus(s.value)}
                       class={[
-                        'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                        'h-7 px-3 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
                         active
                           ? 'bg-accent text-accent-foreground border-transparent'
                           : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -508,7 +508,7 @@ export default defineComponent({
                         type="button"
                         onClick={() => toggleDoctor(d.user_id)}
                         class={[
-                          'h-7 px-3 rounded-full text-xs font-medium border transition-colors',
+                          'h-7 px-3 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
                           active
                             ? 'bg-accent text-accent-foreground border-transparent'
                             : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
