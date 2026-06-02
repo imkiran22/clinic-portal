@@ -28,6 +28,11 @@ export default defineComponent({
     errorMessage: { type: String, default: '' },
     accent: { type: String as PropType<CardAccent>, default: 'default' },
     viewAllLabel: { type: String, default: '' },
+    // Row-1 cards lock to a shared height for visual rhythm; the wide
+    // row-2 card opts out (full-width, single-row layout — equal-height
+    // doesn't matter and a 320px empty card spanning 5 cols looks
+    // wasteful).
+    fixedHeight: { type: Boolean, default: true },
   },
   emits: ['viewAll'],
   setup(props, { slots, emit }) {
@@ -36,8 +41,13 @@ export default defineComponent({
       const empty =
         !props.loading && !hasError && (props.count === 0 || props.count == null)
       return (
+        // Fixed height keeps every card in a row visually aligned. The
+        // body inside is flex-1 + overflow-y-auto so dense content
+        // (e.g. Recent sales with 10 rows) scrolls internally rather
+        // than stretching the row. `fixedHeight={false}` opts out for
+        // full-width cards that own their row.
         <div
-          class={`rounded-lg border ${accentBorder[props.accent]} bg-card flex flex-col`}
+          class={`rounded-lg border ${accentBorder[props.accent]} bg-card flex flex-col ${props.fixedHeight ? 'h-80' : ''}`}
         >
           <div class="px-4 py-3 border-b border-border flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -63,7 +73,12 @@ export default defineComponent({
             )}
           </div>
 
-          <div class="flex-1 min-h-0 px-2 py-2">
+          {/* flex-1 + min-h-0 + overflow-y-auto: fill the remaining
+              card height and scroll internally when content exceeds it.
+              Empty / error / loading states center vertically via
+              `flex items-center justify-center` so an empty card
+              doesn't look top-stuck inside the fixed-height frame. */}
+          <div class="flex-1 min-h-0 overflow-y-auto px-2 py-2">
             {props.loading && (
               <div class="space-y-1 px-2 py-1">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -72,12 +87,12 @@ export default defineComponent({
               </div>
             )}
             {!props.loading && hasError && (
-              <div class="px-2 py-3 text-sm text-red-700 dark:text-red-400">
+              <div class="h-full flex items-center justify-center px-4 text-center text-sm text-red-700 dark:text-red-400">
                 {props.errorMessage}
               </div>
             )}
             {!props.loading && !hasError && empty && (
-              <div class="px-2 py-6 text-center text-sm text-muted-foreground">
+              <div class="h-full flex items-center justify-center px-4 text-center text-sm text-muted-foreground">
                 {slots.empty ? (slots.empty as Slot)() : 'Nothing to show.'}
               </div>
             )}

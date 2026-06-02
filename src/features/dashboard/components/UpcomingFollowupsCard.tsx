@@ -46,6 +46,9 @@ export default defineComponent({
           (error.value ? 'Failed to load' : '')
         }
         accent={accent.value}
+        // Full-width row on its own — let it size to content instead of
+        // padding a 320px frame for a usually-empty "next 3 days" card.
+        fixedHeight={false}
         viewAllLabel={
           (data.value?.total ?? 0) > 5
             ? `View all ${data.value!.total} in patients`

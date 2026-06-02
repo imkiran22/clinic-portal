@@ -19,7 +19,9 @@ export default defineComponent({
           </p>
         </div>
         {/* Row 1: 5 single-col cards at xl (today-appointments first
-            because that's the morning action). The wide row-2 card
+            because that's the morning action). All cards share a fixed
+            height for visual consistency (see DashboardCard) and scroll
+            internally when content exceeds the body. The wide row-2 card
             spans the same 5 columns so the right edge aligns. */}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <TodaysAppointmentsCard />
