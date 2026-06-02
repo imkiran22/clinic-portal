@@ -130,11 +130,18 @@ export default defineComponent({
             placeholder="e.g., 10"
           />
           {!props.isEdit && (
-            <TextField
-              name="initial_stock"
-              label="Initial stock"
-              placeholder="0 (records a PURCHASE)"
-            />
+            <>
+              <TextField
+                name="initial_stock"
+                label="Initial stock"
+                placeholder="0 (records a PURCHASE)"
+              />
+              <DateField
+                name="received_on"
+                label="Received on"
+                required
+              />
+            </>
           )}
         </div>
         <TextField name="notes" label="Notes" rows={2} />

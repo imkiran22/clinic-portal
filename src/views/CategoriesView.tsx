@@ -10,7 +10,17 @@ import {
 import { useCan } from '@/features/auth/composables/useCan'
 import { useAuth } from '@/features/auth/composables/useAuth'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import DatePicker from '@/components/shared/DatePicker'
 import type { Category } from '@/features/categories/types'
+
+// Today as YYYY-MM-DD so we can default the "added on" date field to it.
+function todayIsoDate(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 // Product-categories manage page. Privileged-only — limited tier users
 // who reach this URL get bounced to /inventory. The DB also enforces the
@@ -43,6 +53,7 @@ export default defineComponent({
     })
 
     const newName = ref('')
+    const newAddedOn = ref(todayIsoDate())
     const editingId = ref<string | null>(null)
     const editingName = ref('')
 
@@ -77,8 +88,12 @@ export default defineComponent({
       const name = newName.value.trim()
       if (!name || createMut.isPending.value) return
       try {
-        await createMut.mutateAsync({ name })
+        await createMut.mutateAsync({
+          name,
+          added_on: newAddedOn.value || null,
+        })
         newName.value = ''
+        newAddedOn.value = todayIsoDate()
       } catch {
         // toast surfaced
       }
@@ -111,8 +126,8 @@ export default defineComponent({
         </div>
 
         <div class="rounded-md border border-border bg-card p-4">
-          <div class="flex gap-2 items-end">
-            <div class="flex-1">
+          <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
+            <div class="flex-1 min-w-0">
               <label class="text-sm font-medium" for="new-category">
                 Add category
               </label>
@@ -132,6 +147,16 @@ export default defineComponent({
                 }}
                 class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
+            </div>
+            <div class="sm:w-44">
+              <label class="text-sm font-medium">Added on</label>
+              <div class="mt-1">
+                <DatePicker
+                  modelValue={newAddedOn.value}
+                  onUpdate:modelValue={(v: string) => (newAddedOn.value = v)}
+                  placeholder="DD/MM/YYYY"
+                />
+              </div>
             </div>
             <button
               type="button"

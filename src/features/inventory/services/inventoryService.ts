@@ -81,6 +81,8 @@ export const inventoryService = {
       p_category_id: input.category_id,
       p_notes: input.notes,
       p_initial_stock: input.initial_stock,
+      // Omit when blank so the RPC falls back to its current_date default.
+      ...(input.received_on ? { p_received_on: input.received_on } : {}),
     })
     if (error) throw error
     return data as Product

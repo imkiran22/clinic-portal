@@ -20,6 +20,9 @@ export type Product = {
   reorder_level: number
   category_id: string | null
   notes: string | null
+  // Date the stock was actually received. Defaults to today on insert;
+  // staff override when entering a product a day or two late.
+  received_on: string // YYYY-MM-DD
   deleted_at: string | null
   created_at: string
   updated_at: string
@@ -44,6 +47,9 @@ export type ProductInput = {
 
 export type ProductCreateInput = ProductInput & {
   initial_stock: number
+  // Backdate the "received" date when entering older stock. Empty / omitted
+  // → server uses current_date.
+  received_on: string | null
 }
 
 export type StockMovement = {

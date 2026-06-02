@@ -19,10 +19,21 @@ import type { Appointment } from '@/features/appointments/types'
 
 type FormState = {
   patient: Patient | null
+  visit_date: string
   doctor_notes: string
   treatment_details: string
   followup_date: string
   lines: PrescriptionLine[]
+}
+
+// Today as YYYY-MM-DD (clinic-local). The DatePicker round-trips this
+// format, so we default the visit-date field to today.
+function todayIsoDate(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function trimOrNull(s: string): string | null {
@@ -63,6 +74,8 @@ export default defineComponent({
 
     const state = reactive<FormState>({
       patient: null,
+      // Default to today; staff override when writing up an older visit.
+      visit_date: todayIsoDate(),
       doctor_notes: '',
       treatment_details: '',
       followup_date: '',
@@ -157,6 +170,11 @@ export default defineComponent({
         return false
       }
 
+      if (!state.visit_date) {
+        formError.value = 'Please pick a visit date'
+        return false
+      }
+
       let ok = true
       state.lines.forEach((line, idx) => {
         if (!line.product) {
@@ -201,6 +219,7 @@ export default defineComponent({
       try {
         const visit = await createMut.mutateAsync({
           patient_id: state.patient!.id,
+          visit_date: state.visit_date || null,
           doctor_notes: trimOrNull(state.doctor_notes),
           treatment_details: trimOrNull(state.treatment_details),
           followup_date: state.followup_date || null,
@@ -326,6 +345,24 @@ export default defineComponent({
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-sm font-medium">
+                Visit date <span class="text-destructive ml-0.5">*</span>
+              </label>
+              <div class="mt-1">
+                <DatePicker
+                  modelValue={state.visit_date}
+                  onUpdate:modelValue={(v: string) =>
+                    (state.visit_date = v)
+                  }
+                  placeholder="DD/MM/YYYY"
+                />
+              </div>
+              <p class="mt-1 text-xs text-muted-foreground">
+                When the patient actually came. Defaults to today; change
+                if you're writing up an older visit.
+              </p>
+            </div>
             <div>
               <label class="text-sm font-medium">Follow-up date</label>
               <div class="mt-1">

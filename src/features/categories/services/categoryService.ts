@@ -24,9 +24,17 @@ export const categoryService = {
     const clinic_id = await getCurrentClinicId(sb)
     if (!clinic_id) throw new Error('No clinic profile for current user')
 
+    const row: { clinic_id: string; name: string; added_on?: string } = {
+      clinic_id,
+      name: input.name.trim(),
+    }
+    // Only set when the form provided a date; otherwise the DB default
+    // (current_date) kicks in.
+    if (input.added_on) row.added_on = input.added_on
+
     const { data, error } = await sb
       .from('product_categories')
-      .insert({ clinic_id, name: input.name.trim() })
+      .insert(row)
       .select()
       .single()
     if (error) throw error

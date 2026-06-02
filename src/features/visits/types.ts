@@ -25,6 +25,11 @@ export type VisitCreateInput = {
   treatment_details: string | null
   followup_date: string | null
   prescribed_products: PrescribedProduct[]
+  // Optional event-date override. The form lets staff backdate a visit
+  // they're writing up a day or two late. Stored as 'YYYY-MM-DD' in the
+  // form layer; the service casts it to a timestamptz at local-midnight
+  // before passing to the RPC. Omitted → RPC default = now().
+  visit_date?: string | null
 }
 
 export type VisitsFilter = {

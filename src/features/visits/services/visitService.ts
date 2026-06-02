@@ -142,12 +142,22 @@ export const visitService = {
     sb: AppSupabaseClient,
     input: VisitCreateInput,
   ): Promise<Visit> {
+    // The form passes a 'YYYY-MM-DD' string; we anchor it at local
+    // midnight before sending so PG stores it as the user's calendar
+    // day, not UTC midnight (which would shift backwards in IST etc.).
+    // Empty / undefined → RPC's default = now() preserves the prior
+    // behaviour for callers that don't pass it.
+    const visitDateIso = input.visit_date
+      ? startOfLocalDayIso(input.visit_date)
+      : undefined
+
     const { data, error } = await sb.rpc('create_visit_with_prescriptions', {
       p_patient_id: input.patient_id,
       p_doctor_notes: input.doctor_notes,
       p_treatment_details: input.treatment_details,
       p_followup_date: input.followup_date,
       p_prescribed_products: input.prescribed_products,
+      ...(visitDateIso ? { p_visit_date: visitDateIso } : {}),
     })
     if (error) throw error
     return data as Visit

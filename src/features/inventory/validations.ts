@@ -5,6 +5,16 @@ import type { MovementInput, MovementType, Product } from './types'
 // category_id and supplier_id stay out of the Zod schema because their
 // pickers manage their own value lifecycle as sibling reactive refs.
 // VeeValidate validation isn't useful for the picker shape.
+// Today as YYYY-MM-DD (clinic-local). DatePicker round-trips this format,
+// so we default the received-on field to today.
+function todayIsoDate(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   sku: z.string(),
@@ -19,6 +29,10 @@ export const productFormSchema = z.object({
   reorder_level: z.string().regex(/^$|^\d+$/, 'Whole numbers only'),
   notes: z.string(),
   initial_stock: z.string().regex(/^$|^\d+$/, 'Whole numbers only'),
+  // Date the stock was received. YYYY-MM-DD; defaults to today on
+  // new-product creation. Hidden on edit (the field stays on the product
+  // row but isn't re-collected) — see ProductForm.
+  received_on: z.string(),
 })
 
 export type ProductFormValues = z.infer<typeof productFormSchema>
@@ -33,6 +47,7 @@ export const emptyProductForm: ProductFormValues = {
   reorder_level: '',
   notes: '',
   initial_stock: '',
+  received_on: todayIsoDate(),
 }
 
 function trimOrNull(s: string): string | null {
@@ -57,6 +72,7 @@ export function toProductCreateInput(
     category_id: categoryId,
     notes: trimOrNull(values.notes),
     initial_stock: values.initial_stock === '' ? 0 : Number(values.initial_stock),
+    received_on: values.received_on || null,
   }
 }
 
@@ -65,11 +81,13 @@ export function toProductUpdateInput(
   categoryId: string | null,
   supplierId: string,
 ) {
-  const { initial_stock: _ignored, ...rest } = toProductCreateInput(
-    values,
-    categoryId,
-    supplierId,
-  )
+  // received_on is set at creation time and not re-collected on edit;
+  // initial_stock has its own non-edit path (see ProductForm isEdit guard).
+  const {
+    initial_stock: _ignoredStock,
+    received_on: _ignoredReceived,
+    ...rest
+  } = toProductCreateInput(values, categoryId, supplierId)
   return rest
 }
 
@@ -84,6 +102,9 @@ export function fromProduct(p: Product): ProductFormValues {
     reorder_level: p.reorder_level === null ? '' : String(p.reorder_level),
     notes: p.notes ?? '',
     initial_stock: '',
+    // Carry the existing value through so the (hidden) field has data,
+    // but toProductUpdateInput strips it before submit.
+    received_on: p.received_on ?? '',
   }
 }
 
