@@ -1,5 +1,6 @@
 import { defineComponent, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Eye, EyeOff } from 'lucide-vue-next'
 import { z } from 'zod'
 import { toast } from 'vue-sonner'
 import { supabase } from '@/lib/supabase'
@@ -20,6 +21,7 @@ export default defineComponent({
 
     const email = ref('')
     const password = ref('')
+    const showPassword = ref(false)
     const errors = ref<FieldErrors>({})
     const loading = ref(false)
     const serverError = ref<string | null>(null)
@@ -92,14 +94,24 @@ export default defineComponent({
 
             <div>
               <label class="text-sm font-medium" for="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                autocomplete="current-password"
-                value={password.value}
-                onInput={(e: Event) => (password.value = (e.target as HTMLInputElement).value)}
-                class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <div class="relative mt-1">
+                <input
+                  id="password"
+                  type={showPassword.value ? 'text' : 'password'}
+                  autocomplete="current-password"
+                  value={password.value}
+                  onInput={(e: Event) => (password.value = (e.target as HTMLInputElement).value)}
+                  class="w-full rounded-md border border-border bg-background px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => (showPassword.value = !showPassword.value)}
+                  aria-label={showPassword.value ? 'Hide password' : 'Show password'}
+                  class="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus:outline-none"
+                >
+                  {showPassword.value ? <EyeOff class="size-4" /> : <Eye class="size-4" />}
+                </button>
+              </div>
               {errors.value.password && (
                 <p class="mt-1 text-xs text-destructive">{errors.value.password}</p>
               )}
