@@ -24,6 +24,14 @@ Additional migrations beyond the original M2 set:
 - `0011_products_notes.sql` — adds the notes column + recreates the RPC with `p_notes`
 - `0012_products_supplier_required.sql` — backfills NULL suppliers to 'Unknown' and adds NOT NULL constraint
 - `0013_view_products_low_stock.sql` — `products_low_stock` view (current_stock <= reorder_level AND reorder_level > 0); powers the M8 Low Stock card
+- `0014`–`0015` — role permissions (`is_privileged_user()`) + policy-name fix
+- `0016`–`0017` — product categories / suppliers tables
+- `0018_appointments.sql` — appointments diary (scheduled / done / cancelled), soft-delete view, convert-to-visit link
+- `0019_appointments_assigned_doctor.sql` — `assigned_doctor_id` → profiles
+- `0020`–`0023` — profiles readable within clinic, security-definer clinic helper, drop legacy_client_no auto-assign, backdate fields on visit RPC
+- `0024_appointments_duration.sql` — `duration_minutes int not null default 30` (5–720) for the calendar grid
+
+**Appointments** (`src/features/appointments/`, `/appointments`): table view + **Calendar** view (List/Calendar toggle, remembered per browser). Calendar uses `vue-cal@4` (MIT; FullCalendar's per-resource columns are paid) — day / week / month, per-doctor columns in day view, click-a-slot to book, drag to reschedule (confirm dialog), resize to change duration. Reads go through `appointmentService.listRange` (unpaginated window) under `appointmentKeys.range(...)`; drag/resize use the narrow `reschedule()` patch with an optimistic update. Grid hours / slot size live in `calendarConfig.ts`. UX was modelled on Practo Ray / Pabau / Jane — deferred ideas (queue, arrived/no-show, packages, resources, reminders) are listed in PLAN.md → Appointments calendar.
 
 Known issues to revisit:
 - **Inventory search "doesn't filter"** symptom user reported on 2026-05-19 — no console errors. Needs DevTools Network-tab investigation when user encounters it again.
@@ -111,7 +119,7 @@ See `supabase/README.md` (to be created in M2) for the user onboarding snippet a
 
 ## Out of scope for MVP
 
-- Appointments, billing/invoicing, WhatsApp reminders, prescription printing, before/after image uploads, multi-clinic UI, AI recommendations.
+- Billing/invoicing, WhatsApp reminders, prescription printing, before/after image uploads, multi-clinic UI, AI recommendations.
 - Public signup, OAuth (admin creates users only).
 - FEFO enforcement on sales (flagged in PLAN.md → Risks).
 - Admin UI for user onboarding (manual SQL snippet for now).

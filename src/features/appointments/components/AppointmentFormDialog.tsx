@@ -22,7 +22,14 @@ import {
   useCreateAppointment,
   useUpdateAppointment,
 } from '../composables/useAppointmentMutations'
-import type { Appointment } from '../types'
+import { useAppointmentsRange } from '../composables/useAppointments'
+import {
+  DEFAULT_DURATION,
+  DURATION_PRESETS,
+  MAX_DURATION,
+  MIN_DURATION,
+} from '../calendarConfig'
+import type { Appointment, CalendarRange } from '../types'
 import type { Patient } from '@/features/patients/types'
 import DoctorPicker from '@/features/auth/components/DoctorPicker'
 import type { Profile } from '@/features/auth/services/authService'
@@ -41,8 +48,20 @@ export default defineComponent({
       type: Object as PropType<Patient | null>,
       default: null,
     },
+    // Calendar slot-click pre-fills. Ignored in edit mode.
+    initialScheduledAt: {
+      type: Object as PropType<Date | null>,
+      default: null,
+    },
+    initialDoctor: {
+      type: Object as PropType<Profile | null>,
+      default: null,
+    },
+    // Calendar opens edit mode straight from a block, so the dialog also
+    // carries the row actions the table shows (done / cancel / restore).
+    showStatusActions: { type: Boolean, default: false },
   },
-  emits: ['update:open', 'saved'],
+  emits: ['update:open', 'saved', 'markDone', 'cancelAppt', 'restore'],
   setup(props, { emit }) {
     const isEdit = computed(() => !!props.appointment)
 
@@ -74,11 +93,28 @@ export default defineComponent({
     // timestamp when editing; "today, next half-hour" when creating —
     // staff usually just tweak the hour and submit.
     const initialDate = (): Date | null =>
-      props.appointment ? new Date(props.appointment.scheduled_at) : nextHalfHour()
+      props.appointment
+        ? new Date(props.appointment.scheduled_at)
+        : props.initialScheduledAt
+          ? new Date(props.initialScheduledAt)
+          : nextHalfHour()
     const scheduledAt = ref<Date | null>(initialDate())
     const scheduledAtError = ref<string | null>(null)
     watch(scheduledAt, (v) => {
       if (v) scheduledAtError.value = null
+    })
+
+    // Duration is a sibling ref like scheduledAt (preset chips + number
+    // input don't map onto a single VeeValidate text field).
+    const initialDuration = (): number =>
+      props.appointment?.duration_minutes ?? DEFAULT_DURATION
+    const durationMinutes = ref<number>(initialDuration())
+    const durationError = computed(() => {
+      const d = durationMinutes.value
+      if (!Number.isInteger(d) || d < MIN_DURATION || d > MAX_DURATION) {
+        return `Between ${MIN_DURATION} and ${MAX_DURATION} minutes`
+      }
+      return null
     })
 
     // Assigned doctor lives outside the Zod schema (the picker is a
@@ -88,10 +124,13 @@ export default defineComponent({
     // the doctor) misrepresents the schedule. Edit mode keeps the
     // existing assignment from the row.
     const initialDoctor = (): Profile | null => {
-      if (props.appointment && props.appointment.assigned_doctor) {
-        return props.appointment.assigned_doctor as Profile
+      if (props.appointment) {
+        return props.appointment.assigned_doctor
+          ? (props.appointment.assigned_doctor as Profile)
+          : null
       }
-      return null
+      // Calendar slot in a doctor's column → that doctor.
+      return props.initialDoctor
     }
     const assignedDoctor = ref<Profile | null>(initialDoctor())
 
@@ -107,6 +146,7 @@ export default defineComponent({
             : null
           : initialDoctor()
         scheduledAt.value = initialDate()
+        durationMinutes.value = initialDuration()
       },
     )
     watch(patient, (v) => {
@@ -132,11 +172,51 @@ export default defineComponent({
               : null)
           assignedDoctor.value = initialDoctor()
           scheduledAt.value = initialDate()
+          durationMinutes.value = initialDuration()
           patientError.value = null
           scheduledAtError.value = null
         }
       },
     )
+
+    // Soft overlap warning: same doctor, still-scheduled, time ranges
+    // intersect. Informational only — walk-ins and squeezed-in consults
+    // are normal, so it never blocks the save.
+    const dayRange = computed<CalendarRange>(() => {
+      const d = scheduledAt.value ?? new Date()
+      const from = new Date(d)
+      from.setHours(0, 0, 0, 0)
+      const to = new Date(from)
+      to.setDate(to.getDate() + 1)
+      return {
+        from: from.toISOString(),
+        to: to.toISOString(),
+        statuses: ['scheduled'],
+      }
+    })
+    const { data: sameDay } = useAppointmentsRange(
+      dayRange,
+      () => props.open && !!assignedDoctor.value,
+    )
+    const overlaps = computed<Appointment[]>(() => {
+      const doctorId = assignedDoctor.value?.user_id
+      const start = scheduledAt.value
+      if (!props.open || !doctorId || !start || durationError.value) return []
+      const s = start.getTime()
+      const e = s + durationMinutes.value * 60_000
+      return (sameDay.value ?? []).filter((a) => {
+        if (a.id === props.appointment?.id) return false
+        if (a.assigned_doctor_id !== doctorId) return false
+        const as = new Date(a.scheduled_at).getTime()
+        const ae = as + (a.duration_minutes ?? DEFAULT_DURATION) * 60_000
+        return as < e && s < ae
+      })
+    })
+    const fmtTime = (iso: string) =>
+      new Date(iso).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+      })
 
     const createMut = useCreateAppointment()
     const updateMut = useUpdateAppointment()
@@ -154,12 +234,14 @@ export default defineComponent({
         scheduledAtError.value = 'Date & time required'
         ok = false
       }
+      if (durationError.value) ok = false
       if (!ok) return
       try {
         const input = toAppointmentInput(
           values,
           patient.value!.id,
           scheduledAt.value!,
+          durationMinutes.value,
           assignedDoctor.value?.user_id ?? null,
         )
         if (props.appointment) {
@@ -241,6 +323,52 @@ export default defineComponent({
           </div>
 
           <div>
+            <label class="text-sm font-medium" for="appt-duration">
+              Duration
+            </label>
+            <div class="mt-1 flex flex-wrap items-center gap-1.5">
+              {DURATION_PRESETS.map((m) => {
+                const active = durationMinutes.value === m
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => (durationMinutes.value = m)}
+                    class={[
+                      'h-7 px-3 rounded-full text-xs font-medium border transition-colors tabular-nums',
+                      active
+                        ? 'bg-accent text-accent-foreground border-transparent'
+                        : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground',
+                    ].join(' ')}
+                  >
+                    {m} min
+                  </button>
+                )
+              })}
+              <div class="flex items-center gap-1 text-xs text-muted-foreground">
+                <input
+                  id="appt-duration"
+                  type="number"
+                  min={MIN_DURATION}
+                  max={MAX_DURATION}
+                  step={5}
+                  value={durationMinutes.value}
+                  onInput={(e: Event) =>
+                    (durationMinutes.value = Number(
+                      (e.target as HTMLInputElement).value,
+                    ))
+                  }
+                  class="h-7 w-16 rounded-md border border-border bg-background px-2 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <span>min</span>
+              </div>
+            </div>
+            {durationError.value && (
+              <p class="mt-1 text-xs text-destructive">{durationError.value}</p>
+            )}
+          </div>
+
+          <div>
             <label class="text-sm font-medium">Doctor</label>
             <div class="mt-1">
               <DoctorPicker
@@ -254,6 +382,18 @@ export default defineComponent({
               Optional — leave empty for "any doctor", or pick when the
               patient has asked for one.
             </p>
+            {overlaps.value.length > 0 && (
+              <p class="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                {assignedDoctor.value?.display_name} already has{' '}
+                {overlaps.value
+                  .map(
+                    (a) =>
+                      `${a.patient?.name ?? 'a patient'} at ${fmtTime(a.scheduled_at)}`,
+                  )
+                  .join(', ')}{' '}
+                in this slot. You can still save.
+              </p>
+            )}
           </div>
 
           <TextField
@@ -274,7 +414,38 @@ export default defineComponent({
             placeholder="Optional — e.g., confirmation status, special instructions"
           />
 
-          <div class="flex justify-end gap-2 pt-2">
+          <div class="flex flex-wrap items-center justify-end gap-2 pt-2">
+            {props.showStatusActions && props.appointment && (
+              <div class="mr-auto flex flex-wrap gap-2">
+                {props.appointment.status === 'scheduled' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => emit('markDone', props.appointment)}
+                      class="px-3 py-2 rounded-md border border-border text-sm hover:bg-accent"
+                    >
+                      Mark done
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => emit('cancelAppt', props.appointment)}
+                      class="px-3 py-2 rounded-md border border-border text-sm text-destructive hover:bg-destructive/10"
+                    >
+                      Cancel appt
+                    </button>
+                  </>
+                )}
+                {props.appointment.status === 'cancelled' && (
+                  <button
+                    type="button"
+                    onClick={() => emit('restore', props.appointment)}
+                    class="px-3 py-2 rounded-md border border-border text-sm hover:bg-accent"
+                  >
+                    Restore
+                  </button>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => emit('update:open', false)}

@@ -3,8 +3,10 @@ import { getCurrentClinicId } from '@/lib/clinic'
 import type {
   Appointment,
   AppointmentInput,
+  AppointmentReschedule,
   AppointmentStatus,
   AppointmentsFilter,
+  CalendarRange,
 } from '../types'
 
 export type AppointmentListResult = {
@@ -143,6 +145,43 @@ export const appointmentService = {
     }
   },
 
+  /**
+   * Every appointment whose start falls in [from, to) — unpaginated, for
+   * the calendar grid. A week/month for one small clinic is well under
+   * the safety limit; if it's ever hit the calendar under-renders rather
+   * than hanging.
+   */
+  async listRange(
+    sb: AppSupabaseClient,
+    range: CalendarRange,
+  ): Promise<Appointment[]> {
+    const { from, to, patientSearch, statuses, doctorIds } = range
+
+    let patientIds: string[] | null = null
+    if (patientSearch && patientSearch.trim()) {
+      patientIds = await resolvePatientIds(sb, patientSearch)
+      if (patientIds && patientIds.length === 0) return []
+    }
+
+    let q = sb
+      .from('appointments_active')
+      .select(SELECT_WITH_PATIENT)
+      .gte('scheduled_at', from)
+      .lt('scheduled_at', to)
+      .order('scheduled_at', { ascending: true })
+      .limit(1000)
+
+    if (statuses && statuses.length > 0) q = q.in('status', statuses)
+    if (doctorIds && doctorIds.length > 0) {
+      q = q.in('assigned_doctor_id', doctorIds)
+    }
+    if (patientIds) q = q.in('patient_id', patientIds)
+
+    const { data, error } = await q
+    if (error) throw error
+    return (data ?? []) as unknown as Appointment[]
+  },
+
   async listForPatient(
     sb: AppSupabaseClient,
     patientId: string,
@@ -245,6 +284,7 @@ export const appointmentService = {
         clinic_id,
         patient_id: input.patient_id,
         scheduled_at: input.scheduled_at,
+        duration_minutes: input.duration_minutes,
         treatment_description: input.treatment_description,
         session_number: input.session_number,
         notes: input.notes,
@@ -267,10 +307,35 @@ export const appointmentService = {
       .update({
         patient_id: input.patient_id,
         scheduled_at: input.scheduled_at,
+        duration_minutes: input.duration_minutes,
         treatment_description: input.treatment_description,
         session_number: input.session_number,
         notes: input.notes,
         assigned_doctor_id: input.assigned_doctor_id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Appointment
+  },
+
+  /**
+   * Drag / resize on the calendar. Narrow patch so a move never re-sends
+   * (and potentially clobbers) the rest of the row.
+   */
+  async reschedule(
+    sb: AppSupabaseClient,
+    id: string,
+    patch: AppointmentReschedule,
+  ): Promise<Appointment> {
+    const { data, error } = await sb
+      .from('appointments')
+      .update({
+        scheduled_at: patch.scheduled_at,
+        duration_minutes: patch.duration_minutes,
+        assigned_doctor_id: patch.assigned_doctor_id,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

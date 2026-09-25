@@ -1,0 +1,203 @@
+/* vue-cal 4 theme overrides — maps its hard-coded greys onto our HSL
+   tokens so the grid follows light (neutral) and dark (slate) modes.
+   Status colours mirror AppointmentStatusPill: sky = scheduled,
+   emerald = done, muted = cancelled. */
+
+.appt-calendar .vuecal {
+  --appt-grid: hsl(var(--border) / 0.6);
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: none;
+  font-size: 0.8125rem;
+}
+
+.appt-calendar .vuecal__weekdays-headings,
+.appt-calendar .vuecal__split-days-headers {
+  border-bottom: 1px solid hsl(var(--border));
+}
+.appt-calendar .vuecal__heading,
+.appt-calendar .day-split-header {
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.appt-calendar .day-split-header {
+  font-size: 0.75rem;
+  color: hsl(var(--foreground));
+}
+.appt-calendar .appt-split--unassigned {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+.appt-calendar .vuecal__cell:before {
+  border-color: var(--appt-grid);
+}
+/* vue-cal sizes the time gutter and the matching header offset in em,
+   which drift apart once our font sizes differ from its defaults (12h
+   labels like "10:00am" then overflow the gutter). Pin all of them to
+   one rem width so the gutter, weekday headings and doctor headers
+   always line up. */
+.appt-calendar .vuecal {
+  --appt-gutter: 4.5rem;
+}
+.appt-calendar .vuecal .vuecal__time-column {
+  width: var(--appt-gutter);
+  font-size: 0.6875rem;
+}
+.appt-calendar .vuecal.vuecal--view-with-time .vuecal__weekdays-headings {
+  padding-left: var(--appt-gutter);
+  font-size: 0.8125rem;
+}
+.appt-calendar .vuecal.vuecal--day-view:not(.vuecal--overflow-x) .vuecal__split-days-headers {
+  margin-left: var(--appt-gutter);
+}
+.appt-calendar .vuecal .vuecal__all-day > span {
+  width: var(--appt-gutter);
+}
+.appt-calendar .vuecal__time-column .vuecal__time-cell {
+  color: hsl(var(--muted-foreground));
+  font-size: inherit;
+  padding-right: 0.5rem;
+  white-space: nowrap;
+}
+
+/* Empty cells stay empty — the default "No event" label in every
+   column is noise on a diary grid. (A blank slot doesn't work: vue-cal
+   falls back to the label when the slot renders nothing.) */
+.appt-calendar .vuecal__no-event {
+  display: none;
+}
+.appt-calendar .vuecal__time-column .vuecal__time-cell-line:before {
+  border-color: var(--appt-grid);
+}
+/* Selected must come before today: the selected day is usually today,
+   and the later rule wins at equal specificity. */
+.appt-calendar .vuecal__cell--selected {
+  background-color: transparent;
+}
+.appt-calendar .vuecal__cell--today,
+.appt-calendar .vuecal__cell--current {
+  background-color: hsl(var(--accent) / 0.6);
+}
+.appt-calendar .vuecal__cell--out-of-scope,
+.appt-calendar .vuecal__cell--disabled {
+  color: hsl(var(--muted-foreground) / 0.5);
+}
+.appt-calendar .vuecal__cell--highlighted:not(.vuecal__cell--has-splits),
+.appt-calendar .vuecal__cell-split--highlighted {
+  background-color: hsl(var(--accent));
+}
+.appt-calendar .vuecal__now-line {
+  color: hsl(var(--destructive));
+  opacity: 0.8;
+}
+.appt-calendar .vuecal__cell {
+  cursor: pointer;
+}
+
+/* Month view: day number top-left, "N appts" pill under it. */
+.appt-calendar .vuecal--month-view .vuecal__cell-content {
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 0.375rem 0.5rem;
+  gap: 0.25rem;
+}
+.appt-calendar .vuecal--month-view .vuecal__cell-date {
+  font-size: 0.75rem;
+}
+.appt-calendar .vuecal--month-view .vuecal__cell--today .vuecal__cell-date {
+  font-weight: 600;
+}
+.appt-calendar .vuecal__cell-events-count {
+  position: static;
+  transform: none;
+  background: transparent;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+}
+.appt-calendar .appt-count {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  background: rgb(14 165 233 / 0.15);
+  color: rgb(3 105 161);
+}
+.dark .appt-calendar .appt-count {
+  color: rgb(56 189 248);
+}
+
+/* Appointment blocks. */
+.appt-calendar .vuecal__event.appt-block {
+  border-left: 3px solid transparent;
+  border-radius: 0.3rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  text-align: left;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.appt-calendar .appt-block--scheduled {
+  background: rgb(14 165 233 / 0.16);
+  border-left-color: rgb(14 165 233);
+  color: rgb(7 89 133);
+  cursor: grab;
+}
+.dark .appt-calendar .appt-block--scheduled {
+  background: rgb(14 165 233 / 0.22);
+  color: rgb(186 230 253);
+}
+.appt-calendar .appt-block--done {
+  background: rgb(16 185 129 / 0.12);
+  border-left-color: rgb(16 185 129 / 0.7);
+  color: rgb(4 120 87);
+  opacity: 0.75;
+}
+.dark .appt-calendar .appt-block--done {
+  color: rgb(167 243 208);
+}
+.appt-calendar .appt-block--cancelled {
+  background: hsl(var(--muted));
+  border-left-color: hsl(var(--muted-foreground) / 0.5);
+  color: hsl(var(--muted-foreground));
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.appt-calendar .vuecal__event--dragging {
+  opacity: 0.6;
+}
+.appt-calendar .vuecal__event--focus {
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
+}
+.appt-calendar .vuecal__event-resize-handle {
+  background: hsl(var(--foreground) / 0.12);
+}
+.appt-calendar .appt-block__badge {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  background: hsl(var(--foreground) / 0.1);
+}
+
+/* Day view doctor columns: vue-cal draws no divider between splits. */
+.appt-calendar .vuecal__cell-split:not(:last-child) {
+  border-right: 1px solid var(--appt-grid);
+}
+
+/* Doctor names: one line, ellipsis when a phone squeezes the columns. */
+.appt-calendar .vuecal__split-days-headers .day-split-header {
+  display: block;
+  line-height: 2.2em;
+  padding: 0 0.375rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

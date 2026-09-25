@@ -1,9 +1,9 @@
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
-import { computed, type Ref } from 'vue'
+import { computed, toValue, type MaybeRefOrGetter, type Ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { appointmentService } from '../services/appointmentService'
 import { appointmentKeys } from '../queryKeys'
-import type { AppointmentsFilter } from '../types'
+import type { AppointmentsFilter, CalendarRange } from '../types'
 
 export const APPOINTMENTS_PAGE_SIZE = 50
 
@@ -53,5 +53,19 @@ export function useTodaysAppointments() {
   return useQuery({
     queryKey: appointmentKeys.today(todayIsoDate()),
     queryFn: () => appointmentService.today(supabase),
+  })
+}
+
+export function useAppointmentsRange(
+  range: Ref<CalendarRange>,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  return useQuery({
+    queryKey: computed(() => appointmentKeys.range(range.value)),
+    queryFn: () => appointmentService.listRange(supabase, range.value),
+    enabled: computed(() => toValue(enabled)),
+    // Keep the previous week on screen while the next one loads so the
+    // grid doesn't flash empty on every Prev / Next.
+    placeholderData: keepPreviousData,
   })
 }

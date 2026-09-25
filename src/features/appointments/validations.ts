@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { AppointmentInput } from './types'
 
-// patient_id, assigned_doctor_id and the scheduled timestamp live
+// patient_id, assigned_doctor_id, duration and the scheduled timestamp live
 // outside the Zod schema — they're held as sibling reactive refs in
 // the form (PatientPicker, DoctorPicker, VueDatePicker). VeeValidate's
 // per-field validation doesn't help for those non-text controls.
@@ -49,6 +49,7 @@ export function toAppointmentInput(
   values: AppointmentFormValues,
   patientId: string,
   scheduledAt: Date,
+  durationMinutes: number,
   assignedDoctorId: string | null,
 ): AppointmentInput {
   return {
@@ -57,6 +58,7 @@ export function toAppointmentInput(
     // column stores. The picker hands us a local-time Date object, so
     // this conversion is one-step and timezone-correct.
     scheduled_at: scheduledAt.toISOString(),
+    duration_minutes: durationMinutes,
     treatment_description: values.treatment_description.trim(),
     session_number:
       values.session_number === '' ? null : Number(values.session_number),

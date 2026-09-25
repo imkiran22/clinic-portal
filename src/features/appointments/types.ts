@@ -5,6 +5,8 @@ export type Appointment = {
   clinic_id: string
   patient_id: string
   scheduled_at: string // ISO timestamptz from server
+  // Block length on the calendar grid. Added in 0024; existing rows = 30.
+  duration_minutes: number
   treatment_description: string
   session_number: number | null
   status: AppointmentStatus
@@ -37,9 +39,28 @@ export type AppointmentInput = {
   patient_id: string
   // ISO timestamp the server stores; derived from <input type="datetime-local">.
   scheduled_at: string
+  duration_minutes: number
   treatment_description: string
   session_number: number | null
   notes: string | null
+  assigned_doctor_id: string | null
+}
+
+// Visible window of the calendar. from/to are ISO timestamps (from
+// inclusive, to exclusive) so week/month boundaries are unambiguous.
+// patientSearch uses the same syntax as AppointmentsFilter.
+export type CalendarRange = {
+  from: string
+  to: string
+  patientSearch?: string
+  statuses?: AppointmentStatus[]
+  doctorIds?: string[]
+}
+
+// Narrow patch fired by drag / resize on the calendar.
+export type AppointmentReschedule = {
+  scheduled_at: string
+  duration_minutes: number
   assigned_doctor_id: string | null
 }
 

@@ -1,16 +1,39 @@
 import { computed, defineComponent, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { refDebounced } from '@vueuse/core'
-import { Plus, Search, SlidersHorizontal, X } from 'lucide-vue-next'
+import { refDebounced, useLocalStorage, useMediaQuery } from '@vueuse/core'
+import {
+  addDays,
+  endOfMonth,
+  endOfWeek,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns'
+import {
+  CalendarDays,
+  List,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-vue-next'
 import Modal from '@/components/shared/Modal'
 import {
   useAppointments,
+  useAppointmentsRange,
   APPOINTMENTS_PAGE_SIZE,
 } from '@/features/appointments/composables/useAppointments'
 import {
+  useRescheduleAppointment,
   useSetAppointmentStatus,
   useSoftDeleteAppointment,
 } from '@/features/appointments/composables/useAppointmentMutations'
+import AppointmentsCalendar, {
+  type CalendarView,
+  type RescheduleRequest,
+  type SlotClick,
+} from '@/features/appointments/components/AppointmentsCalendar'
+import CalendarToolbar from '@/features/appointments/components/CalendarToolbar'
 import AppointmentsTable from '@/features/appointments/components/AppointmentsTable'
 import AppointmentFormDialog from '@/features/appointments/components/AppointmentFormDialog'
 import CancelReasonDialog from '@/features/appointments/components/CancelReasonDialog'
@@ -18,10 +41,12 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import DatePicker from '@/components/shared/DatePicker'
 import Pagination from '@/components/shared/Pagination'
 import { useDoctors } from '@/features/auth/composables/useDoctors'
+import type { Profile } from '@/features/auth/services/authService'
 import type {
   Appointment,
   AppointmentStatus,
   AppointmentsSortBy,
+  CalendarRange,
 } from '@/features/appointments/types'
 
 const STATUS_OPTIONS: Array<{
@@ -81,6 +106,32 @@ function rangeFor(mode: Exclude<DateRangeMode, 'custom'>): {
   return { from: start, to: isoDay(endDate) }
 }
 
+// Visible window for each calendar view. Month covers the whole grid
+// (leading/trailing days of adjacent months) so their counts are real.
+function calendarWindow(view: CalendarView, d: Date): { from: Date; to: Date } {
+  if (view === 'day') {
+    const from = startOfDay(d)
+    return { from, to: addDays(from, 1) }
+  }
+  if (view === 'week') {
+    const from = startOfWeek(d, { weekStartsOn: 1 })
+    return { from, to: addDays(from, 7) }
+  }
+  const from = startOfWeek(startOfMonth(d), { weekStartsOn: 1 })
+  const to = addDays(endOfWeek(endOfMonth(d), { weekStartsOn: 1 }), 1)
+  return { from: startOfDay(from), to: startOfDay(to) }
+}
+
+type PageMode = 'list' | 'calendar'
+
+const LIST_DEFAULT_STATUSES: AppointmentStatus[] = ['scheduled']
+// Calendar is a diary — show what already happened too (muted blocks).
+const CALENDAR_DEFAULT_STATUSES: AppointmentStatus[] = ['scheduled', 'done']
+
+function sameStatuses(a: AppointmentStatus[], b: AppointmentStatus[]) {
+  return a.length === b.length && a.every((s) => b.includes(s))
+}
+
 const RANGE_OPTIONS: Array<{ value: DateRangeMode; label: string }> = [
   { value: 'today', label: 'Today' },
   { value: 'tomorrow', label: 'Tomorrow' },
@@ -98,7 +149,25 @@ export default defineComponent({
     const today = todayIsoDate()
     const searchInput = ref('')
     const debouncedSearch = refDebounced(searchInput, 300)
-    const statuses = ref<AppointmentStatus[]>(['scheduled'])
+    // List / Calendar toggle — per-viewer convenience, so localStorage.
+    const mode = useLocalStorage<PageMode>('appointments:mode', 'list')
+    const isCalendar = computed(() => mode.value === 'calendar')
+
+    // Each mode keeps its own status selection (different defaults).
+    const listStatuses = ref<AppointmentStatus[]>([...LIST_DEFAULT_STATUSES])
+    const calStatuses = ref<AppointmentStatus[]>([
+      ...CALENDAR_DEFAULT_STATUSES,
+    ])
+    const statuses = computed<AppointmentStatus[]>({
+      get: () => (isCalendar.value ? calStatuses.value : listStatuses.value),
+      set: (v) => {
+        if (isCalendar.value) calStatuses.value = v
+        else listStatuses.value = v
+      },
+    })
+    const defaultStatuses = computed(() =>
+      isCalendar.value ? CALENDAR_DEFAULT_STATUSES : LIST_DEFAULT_STATUSES,
+    )
     const doctorIds = ref<string[]>([])
     const dateFrom = ref(today)
     const dateTo = ref(today)
@@ -138,19 +207,18 @@ export default defineComponent({
     const moreFiltersOpen = ref(false)
     const extraFiltersCount = computed(() => {
       let n = 0
-      if (
-        statuses.value.length !== 1 ||
-        statuses.value[0] !== 'scheduled'
-      )
-        n += 1
+      if (!sameStatuses(statuses.value, defaultStatuses.value)) n += 1
       if (doctorIds.value.length > 0) n += 1
-      if (sortBy.value !== 'scheduled_asc') n += 1
+      // Sort has no meaning on a time grid.
+      if (!isCalendar.value && sortBy.value !== 'scheduled_asc') n += 1
       return n
     })
 
+    // Bound to listStatuses directly (not the mode-aware `statuses`) so
+    // flipping to Calendar doesn't change the list's key / reset its page.
     const filter = computed(() => ({
       patientSearch: debouncedSearch.value,
-      statuses: statuses.value,
+      statuses: listStatuses.value,
       doctorIds: doctorIds.value,
       dateFrom: dateFrom.value || null,
       dateTo: dateTo.value || null,
@@ -169,23 +237,63 @@ export default defineComponent({
     const rows = computed(() => data.value?.rows ?? [])
     const total = computed(() => data.value?.total ?? 0)
 
-    const hasNonDefaultFilter = computed(
-      () =>
+    const hasNonDefaultFilter = computed(() => {
+      const common =
         debouncedSearch.value.trim().length > 0 ||
-        statuses.value.length !== 1 ||
-        statuses.value[0] !== 'scheduled' ||
-        doctorIds.value.length > 0 ||
+        !sameStatuses(statuses.value, defaultStatuses.value) ||
+        doctorIds.value.length > 0
+      if (isCalendar.value) return common
+      return (
+        common ||
         dateFrom.value !== today ||
         dateTo.value !== today ||
-        sortBy.value !== 'scheduled_asc',
-    )
+        sortBy.value !== 'scheduled_asc'
+      )
+    })
 
     const resetFilters = () => {
       searchInput.value = ''
-      statuses.value = ['scheduled']
+      statuses.value = [...defaultStatuses.value]
       doctorIds.value = []
+      if (isCalendar.value) return
       sortBy.value = 'scheduled_asc'
       setRange('today')
+    }
+
+    // ---------- calendar ----------
+    const calView = useLocalStorage<CalendarView>(
+      'appointments:calendar-view',
+      'week',
+    )
+    const calDate = ref(new Date())
+    // Below md the week grid is unreadable; phones get Day only.
+    const isNarrow = useMediaQuery('(max-width: 767px)')
+    const effectiveView = computed<CalendarView>(() =>
+      isNarrow.value ? 'day' : calView.value,
+    )
+
+    const calRange = computed<CalendarRange>(() => {
+      const w = calendarWindow(effectiveView.value, calDate.value)
+      return {
+        from: w.from.toISOString(),
+        to: w.to.toISOString(),
+        patientSearch: debouncedSearch.value,
+        statuses: calStatuses.value,
+        doctorIds: doctorIds.value,
+      }
+    })
+    const {
+      data: calData,
+      isLoading: calLoading,
+      isError: calIsError,
+      error: calError,
+      isFetching: calFetching,
+    } = useAppointmentsRange(calRange, isCalendar)
+    const calRows = computed(() => calData.value ?? [])
+
+    const rescheduleMut = useRescheduleAppointment()
+    const onReschedule = (r: RescheduleRequest) => {
+      rescheduleMut.mutate({ id: r.appointment.id, patch: r.patch })
     }
 
     const toggleStatus = (s: AppointmentStatus) => {
@@ -203,13 +311,39 @@ export default defineComponent({
     // ---------- form / dialogs ----------
     const formOpen = ref(false)
     const editing = ref<Appointment | null>(null)
+    // Calendar pre-fills (slot click) + whether the dialog should carry
+    // row actions (opened from a calendar block rather than the table).
+    const slotAt = ref<Date | null>(null)
+    const slotDoctor = ref<Profile | null>(null)
+    const fromCalendar = ref(false)
 
     const openNew = () => {
       editing.value = null
+      slotAt.value = null
+      slotDoctor.value = null
+      fromCalendar.value = false
       formOpen.value = true
     }
     const openEdit = (a: Appointment) => {
       editing.value = a
+      fromCalendar.value = false
+      formOpen.value = true
+    }
+    const openFromBlock = (a: Appointment) => {
+      editing.value = a
+      fromCalendar.value = true
+      formOpen.value = true
+    }
+    const openFromSlot = (s: SlotClick) => {
+      editing.value = null
+      fromCalendar.value = false
+      slotAt.value = s.at
+      slotDoctor.value = s.doctorId
+        ? ((doctors.value ?? []).find((d) => d.user_id === s.doctorId) ??
+          (calRows.value.find((a) => a.assigned_doctor_id === s.doctorId)
+            ?.assigned_doctor as Profile | undefined) ??
+          null)
+        : null
       formOpen.value = true
     }
 
@@ -284,19 +418,59 @@ export default defineComponent({
             <div>
               <h1 class="text-2xl font-semibold tracking-tight">Appointments</h1>
               <p class="text-sm text-muted-foreground mt-1">
-                {isLoading.value
-                  ? 'Loading…'
-                  : `${total.value} appointment${total.value === 1 ? '' : 's'}`}
+                {isCalendar.value
+                  ? calLoading.value
+                    ? 'Loading…'
+                    : `${calRows.value.length} in view`
+                  : isLoading.value
+                    ? 'Loading…'
+                    : `${total.value} appointment${total.value === 1 ? '' : 's'}`}
               </p>
+            </div>
+            <div class="flex items-center gap-2">
+            <div
+              class="inline-flex rounded-md border border-border p-0.5 bg-background"
+              role="tablist"
+              aria-label="Appointments layout"
+            >
+              {(
+                [
+                  { value: 'list', label: 'List', icon: List },
+                  { value: 'calendar', label: 'Calendar', icon: CalendarDays },
+                ] as const
+              ).map((m) => {
+                const active = mode.value === m.value
+                const Icon = m.icon
+                return (
+                  <button
+                    key={m.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    aria-label={m.label}
+                    onClick={() => (mode.value = m.value)}
+                    class={[
+                      'inline-flex items-center gap-1.5 h-8 px-3 rounded text-sm font-medium transition-colors',
+                      active
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:text-foreground',
+                    ].join(' ')}
+                  >
+                    <Icon class="size-4" />
+                    <span class="hidden sm:inline">{m.label}</span>
+                  </button>
+                )
+              })}
             </div>
             <button
               type="button"
               onClick={openNew}
-              class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium whitespace-nowrap hover:bg-primary/90"
             >
               <Plus class="size-4" />
               <span>New appointment</span>
             </button>
+            </div>
           </div>
 
           {/* Primary filter row — search + date range chips only.
@@ -317,6 +491,7 @@ export default defineComponent({
               />
             </div>
 
+            {!isCalendar.value && (
             <div class="flex items-center gap-1.5">
               {RANGE_OPTIONS.map((r) => {
                 const active = rangeMode.value === r.value
@@ -337,8 +512,9 @@ export default defineComponent({
                 )
               })}
             </div>
+            )}
 
-            {rangeMode.value === 'custom' && (
+            {!isCalendar.value && rangeMode.value === 'custom' && (
               <div class="flex items-center gap-1 text-xs text-muted-foreground">
                 <div class="w-[120px]">
                   <DatePicker
@@ -388,14 +564,52 @@ export default defineComponent({
             )}
           </div>
 
-          {isError.value && (
+          {isCalendar.value && (
+            <CalendarToolbar
+              view={effectiveView.value}
+              date={calDate.value}
+              compact={isNarrow.value}
+              onUpdate:view={(v: CalendarView) => (calView.value = v)}
+              onUpdate:date={(d: Date) => (calDate.value = d)}
+            />
+          )}
+
+          {(isCalendar.value ? calIsError.value : isError.value) && (
             <div class="rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
-              {(error.value as { message?: string })?.message ??
-                'Failed to load appointments.'}
+              {((isCalendar.value ? calError.value : error.value) as {
+                message?: string
+              })?.message ?? 'Failed to load appointments.'}
             </div>
           )}
         </div>
 
+        {isCalendar.value ? (
+          <div
+            class={[
+              'flex-1 min-h-[480px]',
+              calFetching.value && !calLoading.value
+                ? 'opacity-80 transition-opacity'
+                : '',
+            ].join(' ')}
+          >
+            {calLoading.value ? (
+              <div class="h-full rounded-md bg-muted/40 animate-pulse" />
+            ) : (
+              <AppointmentsCalendar
+                appointments={calRows.value}
+                doctors={doctors.value ?? []}
+                view={effectiveView.value}
+                selectedDate={calDate.value}
+                saving={rescheduleMut.isPending.value}
+                onUpdate:view={(v: CalendarView) => (calView.value = v)}
+                onUpdate:selectedDate={(d: Date) => (calDate.value = d)}
+                onSlotClick={openFromSlot}
+                onEventClick={openFromBlock}
+                onReschedule={onReschedule}
+              />
+            )}
+          </div>
+        ) : (
         <div class="flex-1 min-h-0 overflow-auto">
           {isLoading.value ? (
             <div class="space-y-2">
@@ -424,8 +638,9 @@ export default defineComponent({
             </div>
           ) : null}
         </div>
+        )}
 
-        {!isLoading.value && !isError.value && total.value > 0 && (
+        {!isCalendar.value && !isLoading.value && !isError.value && total.value > 0 && (
           <div class="flex-shrink-0 pt-3 mt-3 border-t border-border">
             <Pagination
               page={page.value}
@@ -439,7 +654,22 @@ export default defineComponent({
         <AppointmentFormDialog
           open={formOpen.value}
           appointment={editing.value}
+          initialScheduledAt={slotAt.value}
+          initialDoctor={slotDoctor.value}
+          showStatusActions={fromCalendar.value}
           onUpdate:open={(v: boolean) => (formOpen.value = v)}
+          onMarkDone={(a: Appointment) => {
+            formOpen.value = false
+            markDone(a)
+          }}
+          onCancelAppt={(a: Appointment) => {
+            formOpen.value = false
+            requestCancel(a)
+          }}
+          onRestore={(a: Appointment) => {
+            formOpen.value = false
+            restore(a)
+          }}
         />
 
         <CancelReasonDialog
@@ -522,6 +752,7 @@ export default defineComponent({
               </div>
             )}
 
+            {!isCalendar.value && (
             <div>
               <h3 class="text-sm font-medium mb-2">Sort by</h3>
               <select
@@ -540,6 +771,7 @@ export default defineComponent({
                 ))}
               </select>
             </div>
+            )}
 
             <div class="flex justify-end pt-2 border-t border-border">
               <button

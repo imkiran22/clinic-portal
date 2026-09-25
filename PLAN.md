@@ -347,6 +347,23 @@ shadcn-vue components to install upfront: button, input, label, form, textarea, 
 
 ---
 
+## Appointments calendar (post-MVP)
+
+Calendar view over the existing `appointments_active` data — a List/Calendar toggle inside `AppointmentsView`, not a new route. Library: `vue-cal@4.10.2` (MIT; `splitDays` gives per-doctor columns, `event-drop` reports `newSplit`). FullCalendar was rejected because vertical resource views are a paid premium plugin; vue-cal v5 was still an RC.
+
+v1: day / week / month, per-doctor columns (day view, roster ∪ assigned doctors + Unassigned), click-slot-to-book (pre-fills time + doctor), drag to reschedule with a confirm dialog, resize for duration (migration 0024), status colours matching `AppointmentStatusPill`, "S{n}" session badge, soft overlap warning in the form. Sunday hidden; hours 9:00–21:00 from `calendarConfig.ts`.
+
+Follow-ups (from Practo / Pabau / Zenoti / Jane / Clinicea research):
+1. Today's queue panel — check-in → in-consult → done with wait timers (needs `arrived` / `in_consult` / `no_show` statuses).
+2. "Book follow-up" from a finished visit, prefilled from `visits.followup_date`.
+3. Packages — book N sessions at an interval, "session 3 of 6".
+4. Service catalogue with default duration per service + colour by treatment type.
+5. Laser machines / rooms as bookable resources (prevent double-booking a device).
+6. WhatsApp confirmations and reminders.
+7. Clinic hours and doctor breaks as table-driven shaded / blocked time.
+
+---
+
 ## Critical Files (to be created)
 
 - [supabase/migrations/0001_init.sql](clinic-portal/supabase/migrations/0001_init.sql) — clinics, profiles, helper fn, enums, domain tables with `clinic_id` + `created_by_display`, active views
