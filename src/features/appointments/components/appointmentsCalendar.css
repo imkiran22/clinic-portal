@@ -56,11 +56,33 @@
 .appt-calendar .vuecal .vuecal__all-day > span {
   width: var(--appt-gutter);
 }
+/* Time axis: each label is centred ON its gridline (Google Calendar
+   style) instead of hanging just under it, so "10:00am" clearly names
+   the line it sits on and never crowds the border.
+   Note: vue-cal's .vuecal__time-cell-line is what draws the full-width
+   row lines across the whole grid (absolutely positioned against the
+   body), so the time cell must stay unpositioned and the line untouched.
+   The label shifts up by half its own height and masks the line where
+   it crosses the gutter. */
 .appt-calendar .vuecal__time-column .vuecal__time-cell {
+  padding: 0 0.875rem 0 0;
   color: hsl(var(--muted-foreground));
   font-size: inherit;
-  padding-right: 0.5rem;
+  line-height: 1;
   white-space: nowrap;
+}
+.appt-calendar .vuecal__time-column .vuecal__time-cell-label {
+  display: block;
+  position: relative;
+  z-index: 1;
+  transform: translateY(-50%);
+  background: hsl(var(--card));
+}
+/* Opening time would be half-clipped by the scroll edge; sit it just
+   below the header border instead. */
+.appt-calendar .vuecal__time-column .vuecal__time-cell:first-child .vuecal__time-cell-label {
+  transform: none;
+  padding-top: 0.3rem;
 }
 
 /* Empty cells stay empty — the default "No event" label in every
@@ -79,7 +101,13 @@
 }
 .appt-calendar .vuecal__cell--today,
 .appt-calendar .vuecal__cell--current {
-  background-color: hsl(var(--accent) / 0.6);
+  background-color: hsl(var(--accent) / 0.5);
+}
+/* Day view shows a single day — tinting it "today" just greys out the
+   whole grid. The now-line is enough there. */
+.appt-calendar .vuecal--day-view .vuecal__cell--today,
+.appt-calendar .vuecal--day-view .vuecal__cell--current {
+  background-color: transparent;
 }
 .appt-calendar .vuecal__cell--out-of-scope,
 .appt-calendar .vuecal__cell--disabled {
@@ -91,7 +119,9 @@
 }
 .appt-calendar .vuecal__now-line {
   color: hsl(var(--destructive));
-  opacity: 0.8;
+  border-top: 2px solid hsl(var(--destructive));
+  opacity: 1;
+  z-index: 2;
 }
 .appt-calendar .vuecal__cell {
   cursor: pointer;
@@ -200,4 +230,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Match the grid dividers in the doctor header row. */
+.appt-calendar .vuecal__split-days-headers .day-split-header:not(:last-child) {
+  border-right: 1px solid var(--appt-grid);
 }
