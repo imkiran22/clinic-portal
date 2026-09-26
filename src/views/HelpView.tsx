@@ -75,6 +75,56 @@ const Kbd = defineComponent({
   },
 })
 
+// Annotated screenshot. Images live in public/help/<topic>/; `rings` are
+// highlight boxes in % of the image (x, y, w, h) so they scale with it.
+// Patient names/numbers in these captures are demo values.
+type Ring = [number, number, number, number]
+
+const Shot = defineComponent({
+  name: 'HelpShot',
+  props: {
+    src: { type: String, required: true },
+    alt: { type: String, required: true },
+    width: { type: Number, required: true },
+    height: { type: Number, required: true },
+    rings: { type: Array as () => Ring[], default: () => [] },
+    caption: { type: String, default: '' },
+    maxWidth: { type: String, default: '' },
+  },
+  setup(props) {
+    return () => (
+      <figure class="space-y-1.5" style={props.maxWidth ? { maxWidth: props.maxWidth } : undefined}>
+        <div class="relative rounded-md border border-border overflow-hidden bg-muted/30">
+          <img
+            src={props.src}
+            alt={props.alt}
+            width={props.width}
+            height={props.height}
+            loading="lazy"
+            class="block w-full h-auto"
+          />
+          {props.rings.map(([x, y, w, h], i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              class="absolute rounded-md border-2 border-rose-500 shadow-[0_0_0_3px_rgb(244_63_94/0.2)] pointer-events-none"
+              style={{
+                left: `calc(${x}% - 4px)`,
+                top: `calc(${y}% - 4px)`,
+                width: `calc(${w}% + 8px)`,
+                height: `calc(${h}% + 8px)`,
+              }}
+            />
+          ))}
+        </div>
+        {props.caption && (
+          <figcaption class="text-xs text-muted-foreground">{props.caption}</figcaption>
+        )}
+      </figure>
+    )
+  },
+})
+
 type TocEntry = {
   id: string
   label: string
@@ -90,6 +140,7 @@ const ALL_SECTIONS: TocEntry[] = [
   { id: 'categories', label: 'Categories', privileged: true },
   { id: 'suppliers', label: 'Suppliers', privileged: true },
   { id: 'appointments', label: 'Appointments' },
+  { id: 'appointments-calendar', label: 'Appointments calendar' },
   { id: 'visits', label: 'Visits & prescriptions' },
   { id: 'sales', label: 'Sales' },
   { id: 'movements', label: 'Stock movements' },
@@ -638,12 +689,25 @@ export default defineComponent({
                 "only Dr. Saranya's day" at a glance.
               </li>
               <li>
+                Set the <strong>Duration</strong> — 15 / 30 / 45 / 60 / 90
+                min chips, or type any number of minutes. Defaults to 30.
+                This is how tall the booking is on the calendar.
+              </li>
+              <li>
                 Add <strong>Notes</strong> for anything that doesn't fit
                 the other fields — confirmation status ("Not confirmed
                 yet"), special requests, advance paid, etc.
               </li>
               <li>Save. Row appears in the list with status Scheduled.</li>
             </ol>
+            <p>
+              Faster from the calendar: click an empty time slot and the
+              form opens with that time and doctor already filled in — see{' '}
+              <a href="#appointments-calendar" class="underline underline-offset-2">
+                Appointments calendar
+              </a>
+              .
+            </p>
 
             <h3 class="text-base font-medium pt-2">Filtering the list</h3>
             <p>
@@ -710,12 +774,230 @@ export default defineComponent({
             </p>
 
             <Note kind="info">
-              No reminders or capacity / time-slot enforcement in this
-              version — two appointments at the same time is allowed
-              (multiple doctors). If staff start asking for slot
-              management or auto-reminders, we'll layer those on after
-              real-usage feedback.
+              Two appointments at the same time are allowed (walk-ins,
+              squeezed-in consults). If the same doctor already has a
+              scheduled booking in that slot, the form shows a yellow
+              warning but still lets you save. There are no automatic
+              reminders yet.
             </Note>
+          </Section>
+
+          <Section id="appointments-calendar" title="Appointments calendar">
+            <p>
+              The same appointments, laid out on a calendar so you can see
+              each doctor's day at a glance, book straight into a free
+              slot, and move bookings by dragging. Screenshots below use
+              demo patient names.
+            </p>
+
+            <h3 class="text-base font-medium pt-2">1. Open the calendar</h3>
+            <p>
+              Open <strong>Appointments</strong> from the sidebar and click{' '}
+              <strong>Calendar</strong> in the List / Calendar switch at the
+              top right. The portal remembers your choice on this device, so
+              next time it opens straight in the calendar.
+            </p>
+            <Shot
+              src="/help/calendar/01-open.webp"
+              alt="Appointments page header with the List / Calendar switch; Calendar selected"
+              width={976}
+              height={150}
+              rings={[[71.2, 8, 10.79, 21.33]]}
+            />
+
+            <h3 class="text-base font-medium pt-2">2. Day view — one column per doctor</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                Columns for <strong>Dr. Saranya</strong>,{' '}
+                <strong>Dr. Selvabaarathi</strong>, and{' '}
+                <strong>Unassigned</strong> (bookings with no doctor picked).
+              </li>
+              <li>
+                <Kbd>‹</Kbd> <Kbd>›</Kbd> move a day back / forward;{' '}
+                <strong>Today</strong> jumps back to today.{' '}
+                <strong>Day / Week / Month</strong> switch the view.
+              </li>
+              <li>The red line is the current time.</li>
+              <li>
+                Each block shows the patient, client #, treatment and time.
+                A badge like <strong>S3</strong> is the session number.
+              </li>
+              <li>
+                Colours: <strong>blue</strong> = scheduled,{' '}
+                <strong>green</strong> = done, <strong>grey, struck
+                through</strong> = cancelled.
+              </li>
+            </ul>
+            <Shot
+              src="/help/calendar/02-day.webp"
+              alt="Day view with columns for Dr. Saranya, Dr. Selvabaarathi and Unassigned"
+              width={1024}
+              height={744}
+              rings={[
+                [9.47, 23.52, 88.09, 3.84],
+                [81.18, 17.74, 16.48, 4.03],
+              ]}
+            />
+
+            <h3 class="text-base font-medium pt-2">3. Week and Month</h3>
+            <p>
+              <strong>Week</strong> shows Monday to Saturday side by side;
+              the letters at the right of a block (<strong>S</strong>,{' '}
+              <strong>SB</strong>) are the doctor's initials.{' '}
+              <strong>Month</strong> shows how many appointments each day
+              has — click a day to open it in Day view.
+            </p>
+            <div class="grid gap-4 md:grid-cols-2">
+              <Shot
+                src="/help/calendar/03-week.webp"
+                alt="Week view, Monday 21 to Saturday 26 September"
+                width={1024}
+                height={744}
+                caption="Week view"
+              />
+              <Shot
+                src="/help/calendar/04-month.webp"
+                alt="Month view of September with an appointment count on each day"
+                width={1024}
+                height={744}
+                rings={[[81.62, 63.88, 15.84, 11.82]]}
+                caption="Month view — click a day to open it"
+              />
+            </div>
+
+            <h3 class="text-base font-medium pt-2">4. Book from an empty slot</h3>
+            <div class="grid gap-4 md:grid-cols-[1fr_300px] items-start">
+              <ol class="list-decimal pl-5 space-y-1">
+                <li>
+                  Click an <strong>empty time slot</strong>. The form opens
+                  with that <strong>time</strong> and that column's{' '}
+                  <strong>doctor</strong> already filled in.
+                </li>
+                <li>Pick the patient (name, phone or #client number).</li>
+                <li>
+                  Choose the <strong>duration</strong> and fill in the
+                  treatment (and session # if it's a repeat).
+                </li>
+                <li>
+                  Click <strong>Create appointment</strong>.
+                </li>
+              </ol>
+              <Shot
+                src="/help/calendar/05-book.webp"
+                alt="New appointment form with date/time 26/09/2026 02:00 PM and doctor Dr. Selvabaarathi filled in"
+                width={512}
+                height={781}
+                rings={[
+                  [4.69, 23.94, 90.63, 4.87],
+                  [4.69, 43.66, 90.63, 6.91],
+                ]}
+                caption="Clicked the 2:00 PM slot in Dr. Selvabaarathi's column"
+              />
+            </div>
+
+            <h3 class="text-base font-medium pt-2">5. Change the time — drag</h3>
+            <div class="grid gap-4 md:grid-cols-[1fr_300px] items-start">
+              <div class="space-y-2">
+                <p>
+                  Drag a block to a new time, or into another doctor's
+                  column. The portal asks you to confirm — click{' '}
+                  <strong>Move</strong>. Dragged by mistake? Click{' '}
+                  <strong>Cancel</strong> and the block goes back.
+                </p>
+                <p>
+                  Only <strong>scheduled</strong> appointments can be moved;
+                  done and cancelled ones stay put.
+                </p>
+              </div>
+              <Shot
+                src="/help/calendar/07-move.webp"
+                alt="Confirmation: Move Priya Sundar (#2041) to Sat 26 Sept, 6:45 pm?"
+                width={448}
+                height={175}
+                rings={[[79.57, 69.14, 15.08, 21.71]]}
+              />
+            </div>
+
+            <h3 class="text-base font-medium pt-2">6. Change the length — drag the bottom edge</h3>
+            <p>
+              Hover a block and a handle appears on its bottom edge. Drag it
+              down to make the appointment longer, up to make it shorter. It
+              snaps to 15-minute steps and saves straight away — there's no
+              confirmation.
+            </p>
+            <Shot
+              src="/help/calendar/06-resize.webp"
+              alt="Day view with the bottom edge of an 11:00 am – 12:00 pm appointment highlighted"
+              width={1024}
+              height={744}
+              rings={[[9.47, 61.24, 29.23, 1.88]]}
+            />
+
+            <h3 class="text-base font-medium pt-2">7. Edit, mark done, cancel</h3>
+            <div class="grid gap-4 md:grid-cols-[1fr_300px] items-start">
+              <ul class="list-disc pl-5 space-y-1">
+                <li>
+                  Click a block to open <strong>Edit appointment</strong>.
+                  Change anything and click <strong>Save changes</strong>.
+                </li>
+                <li>
+                  <strong>Mark done</strong> opens the New Visit form for
+                  that patient; saving the visit marks the appointment Done.
+                </li>
+                <li>
+                  <strong>Cancel appt</strong> asks for an optional reason,
+                  then cancels it.
+                </li>
+              </ul>
+              <Shot
+                src="/help/calendar/08-edit.webp"
+                alt="Edit appointment form with Mark done and Cancel appt buttons"
+                width={512}
+                height={797}
+                rings={[[4.69, 93.22, 40.23, 4.77]]}
+              />
+            </div>
+
+            <h3 class="text-base font-medium pt-2">8. On a phone</h3>
+            <div class="grid gap-4 md:grid-cols-[1fr_220px] items-start">
+              <div class="space-y-2">
+                <p>
+                  Phones get the <strong>Day view</strong> only — a week
+                  doesn't fit. Long names are shortened with "…".
+                </p>
+                <p>
+                  Dragging doesn't work on touchscreens. To change a time,
+                  tap the block and edit it in the form. For new bookings,
+                  use <strong>New appointment</strong> at the top.
+                </p>
+              </div>
+              <Shot
+                src="/help/calendar/09-phone.webp"
+                alt="Phone screen showing the Day view with three doctor columns"
+                width={375}
+                height={812}
+              />
+            </div>
+
+            <h3 class="text-base font-medium pt-2">Good to know</h3>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>
+                Cancelled appointments are hidden on the calendar. To see
+                them, open <strong>Filters</strong> and tick{' '}
+                <strong>Cancelled</strong>.
+              </li>
+              <li>
+                The grid runs 9 AM – 9 PM and stretches automatically if
+                something is booked outside those hours.
+              </li>
+              <li>
+                Sundays are hidden unless there's a booking on one.
+              </li>
+              <li>
+                The <strong>List</strong> view is still there for
+                searching, sorting and bulk review.
+              </li>
+            </ul>
           </Section>
 
           <Section id="visits" title="Visits & prescriptions">
