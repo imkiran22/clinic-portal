@@ -37,6 +37,12 @@ function softNudge() {
 function hasStuckQueries(): boolean {
   return queryClient.getQueryCache().getAll().some((q) => {
     if (q.getObserversCount() === 0) return false
+    // A disabled query that has never run sits at status 'pending'
+    // forever (TanStack v5) — e.g. the calendar range query while in
+    // List mode, or the booking dialog's overlap check while it's closed.
+    // Those aren't stuck; counting them reloaded the page on every tab
+    // return.
+    if (q.isDisabled()) return false
     return q.state.status === 'pending'
   })
 }
