@@ -417,36 +417,68 @@ export default defineComponent({
     )
 
     // ---------- slots ----------
+    // Block layout by length: a 15-min slot is ~20px tall, so it gets a
+    // single line (name + start time); ~30 min gets two lines; longer
+    // blocks get name / treatment / time range.
     const renderEvent = ({ event }: { event: CalEvent }) => {
       const a = byId.value.get(event.appointmentId)
       if (!a) return null
       const start = new Date(a.scheduled_at)
-      const short = (a.duration_minutes ?? DEFAULT_DURATION) <= 20
-      return (
-        <div class="appt-block__inner" title={`${a.patient?.name ?? ''} — ${a.treatment_description}`}>
-          <div class="flex items-baseline gap-1 min-w-0">
-            <span class="font-medium truncate">{a.patient?.name ?? 'Patient'}</span>
-            {a.patient?.legacy_client_no && (
-              <span class="opacity-70 tabular-nums shrink-0">
-                #{a.patient.legacy_client_no}
-              </span>
-            )}
-            {a.session_number !== null && (
-              <span class="appt-block__badge shrink-0">S{a.session_number}</span>
-            )}
-            {!useSplits.value && a.assigned_doctor?.display_name && (
-              <span class="ml-auto shrink-0 opacity-70 text-[10px] font-semibold">
-                {initials(a.assigned_doctor.display_name)}
-              </span>
-            )}
-          </div>
-          {!short && (
-            <div class="truncate opacity-80">{a.treatment_description}</div>
+      const mins = a.duration_minutes ?? DEFAULT_DURATION
+      const tier = mins <= 20 ? 'short' : mins <= 40 ? 'medium' : 'long'
+      const doctorInitials =
+        !useSplits.value && a.assigned_doctor?.display_name
+          ? initials(a.assigned_doctor.display_name)
+          : null
+
+      const header = (
+        <div class="appt-block__row">
+          <span class="font-medium truncate">{a.patient?.name ?? 'Patient'}</span>
+          {a.patient?.legacy_client_no && (
+            <span class="opacity-70 tabular-nums shrink-0">
+              #{a.patient.legacy_client_no}
+            </span>
           )}
-          {!short && (
-            <div class="opacity-60 tabular-nums">
-              {timeFmt(start)} – {timeFmt(endOf(a))}
+          {a.session_number !== null && (
+            <span class="appt-block__badge shrink-0">S{a.session_number}</span>
+          )}
+          {tier === 'short' && (
+            <span class="ml-auto shrink-0 opacity-70 tabular-nums">
+              {timeFmt(start)}
+            </span>
+          )}
+          {doctorInitials && (
+            <span
+              class={[
+                'shrink-0 opacity-70 text-[10px] font-semibold',
+                tier === 'short' ? '' : 'ml-auto',
+              ].join(' ')}
+            >
+              {doctorInitials}
+            </span>
+          )}
+        </div>
+      )
+
+      return (
+        <div
+          class={`appt-block__inner appt-block__inner--${tier}`}
+          title={`${a.patient?.name ?? ''} — ${a.treatment_description} (${timeFmt(start)} – ${timeFmt(endOf(a))})`}
+        >
+          {header}
+          {tier === 'medium' && (
+            <div class="truncate opacity-75">
+              <span class="tabular-nums">{timeFmt(start)}</span>
+              {a.treatment_description ? ` · ${a.treatment_description}` : ''}
             </div>
+          )}
+          {tier === 'long' && (
+            <>
+              <div class="truncate opacity-80">{a.treatment_description}</div>
+              <div class="opacity-60 tabular-nums">
+                {timeFmt(start)} – {timeFmt(endOf(a))}
+              </div>
+            </>
           )}
         </div>
       )
