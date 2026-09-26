@@ -26,7 +26,10 @@
   font-size: 0.75rem;
   color: hsl(var(--foreground));
 }
-.appt-calendar .appt-split--unassigned {
+/* vue-cal puts the split class on both the header and the column's
+   cells — scope it to the header so blocks in "Unassigned" aren't
+   italicised too. */
+.appt-calendar .day-split-header.appt-split--unassigned {
   color: hsl(var(--muted-foreground));
   font-style: italic;
 }
@@ -192,6 +195,18 @@
   overflow: hidden;
   box-sizing: border-box;
 }
+/* Narrow blocks (phone day view, busy week columns): the patient's name
+   matters most, so drop the client # and the short-block time first
+   instead of truncating the name to nothing. */
+.appt-calendar .appt-block__inner {
+  container-type: inline-size;
+}
+@container (max-width: 130px) {
+  .appt-calendar .appt-block__no,
+  .appt-calendar .appt-block__time {
+    display: none;
+  }
+}
 .appt-calendar .appt-block__inner--short {
   justify-content: center;
   padding-block: 0;
@@ -204,7 +219,9 @@
 }
 
 .appt-calendar .appt-block--scheduled .appt-block__inner {
-  background: rgb(14 165 233 / 0.16);
+  /* Solid (tint mixed into the card colour) so grid lines don't show
+     through the block. */
+  background: color-mix(in srgb, rgb(14 165 233) 16%, hsl(var(--card)));
   border-left-color: rgb(14 165 233);
   color: rgb(7 89 133);
 }
@@ -212,24 +229,23 @@
   cursor: grab;
 }
 .dark .appt-calendar .appt-block--scheduled .appt-block__inner {
-  background: rgb(14 165 233 / 0.22);
+  background: color-mix(in srgb, rgb(14 165 233) 22%, hsl(var(--card)));
   color: rgb(186 230 253);
 }
 .appt-calendar .appt-block--done .appt-block__inner {
-  background: rgb(16 185 129 / 0.12);
-  border-left-color: rgb(16 185 129 / 0.7);
-  color: rgb(4 120 87);
-  opacity: 0.75;
+  background: color-mix(in srgb, rgb(16 185 129) 10%, hsl(var(--card)));
+  border-left-color: color-mix(in srgb, rgb(16 185 129) 70%, hsl(var(--card)));
+  color: color-mix(in srgb, rgb(4 120 87) 80%, hsl(var(--card)));
 }
 .dark .appt-calendar .appt-block--done .appt-block__inner {
-  color: rgb(167 243 208);
+  background: color-mix(in srgb, rgb(16 185 129) 14%, hsl(var(--card)));
+  color: color-mix(in srgb, rgb(167 243 208) 80%, hsl(var(--card)));
 }
 .appt-calendar .appt-block--cancelled .appt-block__inner {
   background: hsl(var(--muted));
   border-left-color: hsl(var(--muted-foreground) / 0.5);
   color: hsl(var(--muted-foreground));
   text-decoration: line-through;
-  opacity: 0.6;
 }
 .appt-calendar .vuecal__event--dragging {
   opacity: 0.6;

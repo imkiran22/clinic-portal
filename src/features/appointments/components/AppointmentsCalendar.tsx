@@ -435,15 +435,17 @@ export default defineComponent({
         <div class="appt-block__row">
           <span class="font-medium truncate">{a.patient?.name ?? 'Patient'}</span>
           {a.patient?.legacy_client_no && (
-            <span class="opacity-70 tabular-nums shrink-0">
+            <span class="appt-block__no opacity-70 tabular-nums shrink-0">
               #{a.patient.legacy_client_no}
             </span>
           )}
           {a.session_number !== null && (
             <span class="appt-block__badge shrink-0">S{a.session_number}</span>
           )}
-          {tier === 'short' && (
-            <span class="ml-auto shrink-0 opacity-70 tabular-nums">
+          {/* Week columns are narrow: the block's position already shows
+              the time, so give the space to the patient's name. */}
+          {tier === 'short' && props.view !== 'week' && (
+            <span class="appt-block__time ml-auto shrink-0 opacity-70 tabular-nums">
               {timeFmt(start)}
             </span>
           )}
@@ -451,7 +453,7 @@ export default defineComponent({
             <span
               class={[
                 'shrink-0 opacity-70 text-[10px] font-semibold',
-                tier === 'short' ? '' : 'ml-auto',
+                tier === 'short' && props.view !== 'week' ? '' : 'ml-auto',
               ].join(' ')}
             >
               {doctorInitials}
